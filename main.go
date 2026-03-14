@@ -135,7 +135,7 @@ func main() {
 	wd := wordlist.Wordlist{}
 	// pflags
 	pflag.StringVarP(&url, "url", "u", "", "Target URL (e.g. https://localhost)")
-	pflag.StringVarP(&wd.Wordlist, "wordlist", "w", "common", "Path to the wordlist. Defaults to common.txt from SecLists")
+	pflag.StringVarP(&wd.Wordlist, "wordlist", "w", "medium", "Path to the wordlist. Defaults to raft-medium-directories from SecLists")
 	pflag.IntVarP(&threads, "threads", "t", 15, "Number of threads(goroutines) to use. Default: 15")
 	pflag.IntSliceVarP(&ignoreCode, "ignore", "i", []int{404, 400, 405, 408}, "Comma-separated list of status codes to ignore")
 	pflag.StringSliceVarP(&exts, "ext", "x", nil, "")

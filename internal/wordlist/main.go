@@ -59,10 +59,12 @@ func (WordlistStruct *Wordlist) LoadWordlist() {
 		case "small":
 			ListSlice = Small()
 			return
-		case "common",  "medium":
+		case "common":
 			ListSlice = Common()
 			return
-		case "big", "big.txt":
+		case "medium":
+			ListSlice = Medium()
+		case "big":
 			ListSlice = Big()
 			return
 		case "ports",  "port":
