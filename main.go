@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+
 	"time"
 
 	"os"
@@ -272,7 +273,10 @@ if !quiet {
 
 	wd.LoadWordlist()
 	limiter := make(chan struct{}, threads)
-	dirsChan := make(chan string, threads * 50)
+	var dirsChan chan string
+	if mode == core.ModeDir {
+		dirsChan = make(chan string, threads * 50)
+	}
 	engine := &core.Core{
 		// Mode
 		Mode: mode,

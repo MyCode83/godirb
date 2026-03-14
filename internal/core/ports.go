@@ -11,7 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valyala/fasthttp"
+	"net/http"
+	"io"
 )
 func looksLikeService(err error) bool {
     s := err.Error()
@@ -19,85 +20,111 @@ func looksLikeService(err error) bool {
            strings.Contains(s, "EOF") ||
            strings.Contains(s, "reset")
 }
+func getHostOnly(u string) string {
+    parts := strings.SplitN(u, "://", 2)
+    if len(parts) == 2 {
+        u = parts[1]
+    }
 
+    host := strings.SplitN(u, "/", 2)[0]
+    host = strings.SplitN(host, ":", 2)[0]
+
+    return host
+}
 func (c *Core) RunPorts(baseUrl string) {
-		result := tui.Result{}
-		for _, word := range wordlist.ListSlice {
 
-			select {
-			case <-c.Ctx.Done():
-				return
-			case c.Limiter <- struct{}{}:
-			}
+	client := &http.Client{
+		Timeout: c.Timeout,
+		Transport: &http.Transport{
+			DisableKeepAlives:     true,
+			MaxIdleConns:          0,
+			MaxIdleConnsPerHost:   0,
+			IdleConnTimeout:       0,
+			TLSHandshakeTimeout:   c.Timeout,
+			ResponseHeaderTimeout: c.Timeout,
+			TLSClientConfig:       c.Client.TLSConfig,
+		},
+	}
 
+	urlParts := strings.Split(baseUrl, c.Placeholder)
+
+	for _, word := range wordlist.ListSlice {
+
+		select {
+		case <-c.Ctx.Done():
+			return
+		case c.Limiter <- struct{}{}:
+		}
 
 		word = strings.TrimLeft(word, "/")
-
 		c.WG.Add(1)
 
-		
-
 		go func(word string) {
+
 			defer c.WG.Done()
 			defer func() { <-c.Limiter }()
-			methodSwitch := "GET"
-			request := fasthttp.AcquireRequest()
-			response := fasthttp.AcquireResponse()
 
-			defer fasthttp.ReleaseRequest(request)
-			defer fasthttp.ReleaseResponse(response)
+			result := tui.Result{}
+			methodSwitch := "GET"
 
 			switch c.Method {
 			case "GET", "HEAD", "get", "head":
-				request.Header.SetMethod(strings.ToUpper(c.Method))
+				methodSwitch = strings.ToUpper(c.Method)
+
 			case "SWITCH", "switch", "swich":
 				if methodSwitch == "GET" {
 					methodSwitch = "HEAD"
 				} else {
 					methodSwitch = "GET"
 				}
-				request.Header.SetMethod(methodSwitch)
 			}
 
-			urlParts := strings.Split(baseUrl, c.Placeholder)
 			fullURL := urlParts[0] + word + urlParts[1]
-			request.SetRequestURI(fullURL)
 
-
-			request.Header.SetUserAgent(random.RandChoice(c.UserAgents))
-			if c.AuthHeader != "" {
-				request.Header.Set("Authorization", c.AuthHeader)
+			req, err := http.NewRequest(methodSwitch, fullURL, nil)
+			if err != nil {
+				return
 			}
-			err := c.Client.DoTimeout(request, response, c.Timeout)
+
+			req.Header.Set("User-Agent", random.RandChoice(c.UserAgents))
+
+			if c.AuthHeader != "" {
+				req.Header.Set("Authorization", c.AuthHeader)
+			}
+
+			resp, err := client.Do(req)
+
 			if c.Ctx.Err() != nil {
 				return
 			}
-			status := response.StatusCode()
+
 			if err != nil {
 				if looksLikeService(err) {
 					result.Prefix = "?"
 					result.URL = fullURL
-					result.Status = status
+					result.Status = 0
 					result.Extra = fmt.Sprintf("(error: %v)", err)
 					tui.Print(result, c.Quiet)
 					result.Extra = ""
 				}
 				return
 			}
-			
-			lenght := len(response.Body())
 
-			
-			
-			request.Reset()
-			response.Reset()
+			defer resp.Body.Close()
+
+			body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+			length := len(body)
+			status := resp.StatusCode
+
 			if slices.Contains(c.IgnoreCodes, status) {
 				return
 			}
+
 			result.Prefix = prefix
-			result.Size = lenght
+			result.Size = length
 			result.Status = status
 			result.URL = fullURL
+
 			tui.Print(result, c.Quiet)
 
 			if c.Delay > 0 {
@@ -107,11 +134,9 @@ func (c *Core) RunPorts(baseUrl string) {
 					return
 				}
 			}
-			
 
 		}(word)
+
 	}
-
-
 
 }

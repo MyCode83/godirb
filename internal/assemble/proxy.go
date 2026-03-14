@@ -15,6 +15,7 @@ func BuildProxyAndClient(proxy string, timeout time.Duration, insecure bool) *fa
 		InsecureSkipVerify: insecure,
 	}
 	client := &fasthttp.Client{
+		
 		ReadTimeout:     timeout,
 		WriteTimeout:    timeout,
 		MaxConnDuration: timeout,
