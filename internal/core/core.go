@@ -54,7 +54,10 @@ type Core struct {
 	// Concurrency
 	Limiter chan struct{}
 	DirsChan chan string
-	TasksWG *sync.WaitGroup
+
+	WG *sync.WaitGroup
+
+
 
 	// State
 	VisitedDirs map[string]bool

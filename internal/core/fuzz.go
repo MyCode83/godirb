@@ -20,6 +20,8 @@ func (c *Core) RunFuzz(baseURL string) {
 		return
 	}
 	result := tui.Result{}
+
+
 	for _, word := range wordlist.ListSlice {
 		select {
 		case <-c.Ctx.Done():
@@ -29,8 +31,15 @@ func (c *Core) RunFuzz(baseURL string) {
 		}
 		c.Limiter <- struct{}{}
 		word = strings.TrimLeft(word, "/")
-		func(word string) {
+
+		c.WG.Add(1)
+
+		go func(word string) {
+
 			defer func() { <-c.Limiter }()
+			defer c.WG.Done()
+
+
 			select {
 			case <-c.Ctx.Done():
 				return
@@ -148,7 +157,7 @@ func (c *Core) RunFuzz(baseURL string) {
 			result.Size = lenght
 			result.Status = status
 			tui.Print(result, c.Quiet)
-			c.TasksWG.Add(1)
+
 			if c.Delay > 0 {
 				select {
 				case <-time.After(c.Delay):

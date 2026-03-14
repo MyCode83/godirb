@@ -104,7 +104,6 @@ var (
 	auth          string
 	contextCancel context.Context
 	cancel        context.CancelFunc
-	dirsChan      = make(chan string, 1000)
 )
 
 func main() {
@@ -158,6 +157,10 @@ func main() {
 	pflag.StringSliceVarP(&header, "header", "H", nil, "Add Header")
 	pflag.BoolVarP(&insecure, "insecure", "k", false, "Skip tls validation")
 	pflag.BoolVarP(&quiet, "quiet", "q", false, "Luego")
+
+
+
+
 
 
 	pflag.Usage = func() {
@@ -269,6 +272,7 @@ if !quiet {
 
 	wd.LoadWordlist()
 	limiter := make(chan struct{}, threads)
+	dirsChan := make(chan string, threads * 50)
 	engine := &core.Core{
 		// Mode
 		Mode: mode,
@@ -300,7 +304,9 @@ if !quiet {
 		// Concurrency
 		Limiter:  limiter,
 		DirsChan: dirsChan,
-		TasksWG:  &tasksWG,
+
+		// WG
+		WG: &wg, 
 
 		// State
 		VisitedDirs: make(map[string]bool),
@@ -342,35 +348,7 @@ if !quiet {
 		engine.Baseline = baseline
 	
 	}
-	tasksWG.Add(1)
-	go func() {
-		tasksWG.Wait()
-		cancel()
-	}()
-	wg.Add(threads)
-
-	for range threads {
-		go func() {
-			defer wg.Done()
-			for {
-				select {
-				case <-contextCancel.Done():
-					return
-				case dir, ok := <-dirsChan:
-					if !ok {
-						return
-					}
-					engine.Run(dir)
-					tasksWG.Done()
-				}
-			}
-		}()
-	}
-
-	dirsChan <- BaseURL
-	if mode == core.ModeFuzz|| mode == core.ModePort|| !recursive {
-		close(dirsChan)
-	}
+	engine.Run(BaseURL)
 	wg.Wait()
 
 }

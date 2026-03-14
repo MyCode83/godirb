@@ -21,32 +21,32 @@ func looksLikeService(err error) bool {
 }
 
 func (c *Core) RunPorts(baseUrl string) {
-	result := tui.Result{}
-	for _, word := range wordlist.ListSlice {
+		result := tui.Result{}
+		for _, word := range wordlist.ListSlice {
 
-		select {
-		case <-c.Ctx.Done():
-
-			return
-		default:
-		}
-		select {
-		case c.Limiter <- struct{}{}:
-
-		case <-c.Ctx.Done():
-			return
-
-		}
-		
-		word = strings.TrimLeft(word, "/")
-		func(word string) {
-			defer func() { <-c.Limiter }()
-			if c.Ctx.Err() != nil {
+			select {
+			case <-c.Ctx.Done():
 				return
+			case c.Limiter <- struct{}{}:
 			}
+
+
+		word = strings.TrimLeft(word, "/")
+
+		c.WG.Add(1)
+
+		
+
+		go func(word string) {
+			defer c.WG.Done()
+			defer func() { <-c.Limiter }()
 			methodSwitch := "GET"
 			request := fasthttp.AcquireRequest()
 			response := fasthttp.AcquireResponse()
+
+			defer fasthttp.ReleaseRequest(request)
+			defer fasthttp.ReleaseResponse(response)
+
 			switch c.Method {
 			case "GET", "HEAD", "get", "head":
 				request.Header.SetMethod(strings.ToUpper(c.Method))
@@ -89,8 +89,8 @@ func (c *Core) RunPorts(baseUrl string) {
 
 			
 			
-			fasthttp.ReleaseRequest(request)
-			fasthttp.ReleaseResponse(response)
+			request.Reset()
+			response.Reset()
 			if slices.Contains(c.IgnoreCodes, status) {
 				return
 			}
@@ -99,7 +99,7 @@ func (c *Core) RunPorts(baseUrl string) {
 			result.Status = status
 			result.URL = fullURL
 			tui.Print(result, c.Quiet)
-			c.TasksWG.Add(1)
+
 			if c.Delay > 0 {
 				select {
 				case <-time.After(c.Delay):
@@ -111,4 +111,7 @@ func (c *Core) RunPorts(baseUrl string) {
 
 		}(word)
 	}
+
+
+
 }
