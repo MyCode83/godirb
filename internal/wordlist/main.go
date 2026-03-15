@@ -6,26 +6,26 @@ import (
 	"os"
 	"errors"
 	"godirb/pkg/suggest"
+	"io"
 )
 type Wordlist struct {
 	Wordlist string
 	DefaultWordlists []string
 }
 var ListSlice []string
-func (wd *Wordlist) loadReader(list  *os.File) {
-	scanner := bufio.NewScanner(list)
+func (wd *Wordlist) loadReader(r io.Reader) {
+	scanner := bufio.NewScanner(r)
 
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
+		line := strings.ReplaceAll(scanner.Text(), "\r", "")
+		line = strings.ReplaceAll(scanner.Text(), "\t", "")
+	
+		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
+		fmt.Println(line)
 		ListSlice = append(ListSlice, line)
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "[X] %v\n", err)
-		os.Exit(1)
 	}
 }
 func (WordlistStruct *Wordlist) LoadWordlist() {
@@ -35,10 +35,14 @@ func (WordlistStruct *Wordlist) LoadWordlist() {
 	}
 	var list *os.File
 	var err error
+	fmt.Println()
 	if WordlistStruct.Wordlist == "-" {
-		list = os.Stdin
-		WordlistStruct.loadReader(list)
-		return
+		if WordlistStruct.Wordlist == "-" {
+			fmt.Println("STDIN")
+			
+			WordlistStruct.loadReader(os.Stdin)
+			return
+		}
 	}
 
 	list, err = os.Open(WordlistStruct.Wordlist)
@@ -54,7 +58,7 @@ func (WordlistStruct *Wordlist) LoadWordlist() {
 		return
 	}
 	WordlistStruct.Wordlist = strings.TrimSuffix(strings.ToLower(strings.TrimSpace(WordlistStruct.Wordlist)), ".txt")
-	embedWordlists := []string{"small", "common", "medium", "big", "ports","payloads", "xss"}
+	embedWordlists := []string{"small", "common", "medium", "big", "ports","payloads", "xss", "lfi"}
 	switch  WordlistStruct.Wordlist{
 		case "small":
 			ListSlice = Small()
@@ -79,7 +83,7 @@ func (WordlistStruct *Wordlist) LoadWordlist() {
 			suggest := suggest.SuggestClosest(2, WordlistStruct.Wordlist, embedWordlists...)
 			fmt.Fprintf(os.Stderr,"[X] Wordlist not found\n")
 			if  suggest != "" {
-				fmt.Printf("Did you mean '%s'?\n", suggest)
+				fmt.Fprintf(os.Stderr, "Did you mean '%s'?\n", suggest)
 			}
 			os.Exit(2)
 	}

@@ -21,8 +21,10 @@ func (c *Core) RunFuzz(baseURL string) {
 	}
 	result := tui.Result{}
 
+	
 
 	for _, word := range wordlist.ListSlice {
+		
 		select {
 		case <-c.Ctx.Done():
 			return
@@ -63,6 +65,7 @@ func (c *Core) RunFuzz(baseURL string) {
 
 			urlParts := strings.Split(baseURL, c.Placeholder)
 			fullURL := urlParts[0] + word + urlParts[1]
+			
 			request.SetRequestURI(fullURL)
 
 
@@ -89,7 +92,7 @@ func (c *Core) RunFuzz(baseURL string) {
 			
 			fasthttp.ReleaseRequest(request)
 			fasthttp.ReleaseResponse(response)
-			if len(c.Exts) > 0 || c.Exts != nil {
+			if len(c.Exts) > 0 {
 				for _, ext := range c.Exts {
 					urlWithExt := urlParts[0] + word + "." + ext + urlParts[1]
 					request2 := fasthttp.AcquireRequest()

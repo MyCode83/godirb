@@ -34,7 +34,7 @@ func (c *Core) RunDir(baseURL string) {
 		close(c.DirsChan)
 
 	}()
-
+	fmt.Println(len(wordlist.ListSlice))
 	// Dirs loop
 	for dir := range c.DirsChan {
 
@@ -96,6 +96,7 @@ func (c *Core) RunDir(baseURL string) {
 				}
 
 				fullURL := fmt.Sprintf("%s/%s", dir, word)
+				fmt.Println(fullURL)
 				request.SetRequestURI(fullURL)
 
 
@@ -118,6 +119,7 @@ func (c *Core) RunDir(baseURL string) {
 				lenght := len(response.Body())
 				if c.Wildcard.Active {
 					if status == c.Wildcard.Status && wildcard.IsSimilarSize(lenght, c.Wildcard.Lenght, c.Wildcard.Tolerance) {
+						fmt.Println("WILDCARD")
 						return
 					}
 				}
@@ -193,7 +195,7 @@ func (c *Core) RunDir(baseURL string) {
 					}
 				}
 				if slices.Contains(c.IgnoreCodes, status) {
-
+					fmt.Println("IGNORED")
 					return
 
 				}

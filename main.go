@@ -168,6 +168,7 @@ func main() {
 		fmt.Println(help.PrintHelp())
 	}
 	pflag.Parse()
+	wd.LoadWordlist()
 	if !quiet {
 		fmt.Printf(banner)
 		log.Println("Godirb v", version)
@@ -271,7 +272,7 @@ if !quiet {
 }
 
 
-	wd.LoadWordlist()
+	
 	limiter := make(chan struct{}, threads)
 	var dirsChan chan string
 	if mode == core.ModeDir {
