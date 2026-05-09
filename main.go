@@ -168,7 +168,7 @@ func main() {
 		fmt.Println(help.PrintHelp())
 	}
 	pflag.Parse()
-	wd.LoadWordlist()
+	
 	if !quiet {
 		fmt.Printf(banner)
 		log.Println("Godirb v", version)
@@ -233,6 +233,7 @@ func main() {
 		if !pflag.Lookup("timeout").Changed {
 			timeout = time.Duration(500) * time.Millisecond
 		}
+		log.Printf("DEBUG: %s\n", wd.Wordlist)
 		switch  {
 		case timeout > time.Second:
 			fmt.Printf("[!] High timeout (%s). Scan may be slow.\n", timeout)
@@ -245,12 +246,14 @@ func main() {
 		}
 	}
 
+	wd.LoadWordlist() // Load Wordlist
+
 	// Basic-Auth
 	if password != "" && username != "" {
 		auth = assemble.BuildBasicAuth(username, password)
 	}
 
-
+	log.Printf("DEBUG: %s\n", wd.Wordlist)
 if !quiet {
 	fmt.Println("\n\n------------------")
 	fmt.Println("[*] Url: ", BaseURL)
@@ -271,13 +274,15 @@ if !quiet {
 	fmt.Println("------------------\n")
 }
 
-
+	log.Printf("DEBUG: %s\n", wd.Wordlist)
+	
 	
 	limiter := make(chan struct{}, threads)
 	var dirsChan chan string
 	if mode == core.ModeDir {
 		dirsChan = make(chan string, threads * 50)
 	}
+	log.Printf("DEBUG: %s\n", wordlist.ListSlice[0])
 	engine := &core.Core{
 		// Mode
 		Mode: mode,
