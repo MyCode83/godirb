@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"godirb/internal/wordlist"
+
 	"godirb/internal/tui"
 	"godirb/pkg/random"
 	"slices"
@@ -23,7 +23,7 @@ func (c *Core) RunFuzz(baseURL string) {
 
 	
 
-	for _, word := range wordlist.ListSlice {
+	for _, word := range c.WL {
 		
 		select {
 		case <-c.Ctx.Done():

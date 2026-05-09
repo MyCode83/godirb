@@ -56,7 +56,7 @@ type Core struct {
 	DirsChan chan string
 
 	WG *sync.WaitGroup
-
+	WL []string
 
 
 	// State

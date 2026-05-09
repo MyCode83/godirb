@@ -6,7 +6,6 @@ import (
 
 	"godirb/internal/detention"
 	"godirb/internal/wildcard"
-	"godirb/internal/wordlist"
 	"godirb/internal/tui"
 	"godirb/pkg/random"
 	"os"
@@ -34,14 +33,14 @@ func (c *Core) RunDir(baseURL string) {
 		close(c.DirsChan)
 
 	}()
-	fmt.Println(len(wordlist.ListSlice))
+	
 	// Dirs loop
 	for dir := range c.DirsChan {
 
 
 
 		// Wordlist loop
-		for _, word := range wordlist.ListSlice {
+		for _, word := range c.WL {
 			select {
 			case <-c.Ctx.Done():
 				return

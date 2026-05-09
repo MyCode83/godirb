@@ -12,7 +12,7 @@ type Wordlist struct {
 	Wordlist string
 	DefaultWordlists []string
 }
-var ListSlice []string
+var listSlice []string
 func (wd *Wordlist) loadReader(r io.Reader) {
 	scanner := bufio.NewScanner(r)
 
@@ -25,10 +25,10 @@ func (wd *Wordlist) loadReader(r io.Reader) {
 			continue
 		}
 		fmt.Println(line)
-		ListSlice = append(ListSlice, line)
+		listSlice = append(listSlice, line)
 	}
 }
-func (WordlistStruct *Wordlist) LoadWordlist() {
+func (WordlistStruct *Wordlist) LoadWordlist() []string{
 	if WordlistStruct.Wordlist == "" {
 		fmt.Fprintf(os.Stderr, "[X] Empty Wordlist. Run --help for usage.\n")
 		os.Exit(2)
@@ -38,10 +38,10 @@ func (WordlistStruct *Wordlist) LoadWordlist() {
 	fmt.Println()
 	if WordlistStruct.Wordlist == "-" {
 		if WordlistStruct.Wordlist == "-" {
-			fmt.Println("STDIN")
+			
 			
 			WordlistStruct.loadReader(os.Stdin)
-			return
+			return listSlice
 		}
 	}
 
@@ -55,30 +55,27 @@ func (WordlistStruct *Wordlist) LoadWordlist() {
 	if err == nil {
 		defer list.Close()
 		WordlistStruct.loadReader(list)
-		return
+		return listSlice
 	}
 	WordlistStruct.Wordlist = strings.TrimSuffix(strings.ToLower(strings.TrimSpace(WordlistStruct.Wordlist)), ".txt")
 	embedWordlists := []string{"small", "common", "medium", "big", "ports","payloads", "xss", "lfi"}
 	switch  WordlistStruct.Wordlist{
 		case "small":
-			ListSlice = Small()
-			return
+			listSlice = Small()
 		case "common":
-			ListSlice = Common()
-			return
+			listSlice = Common()
 		case "medium":
-			ListSlice = Medium()
+			listSlice = Medium()
 		case "big":
-			ListSlice = Big()
-			return
+			listSlice = Big()
 		case "ports",  "port":
-			ListSlice = Ports()
+			listSlice = Ports()
 		case "payloads", "payload":
-			ListSlice = Payloads()
+			listSlice = Payloads()
 		case "xss",  "xss-payloads":
-			ListSlice = Xss()
+			listSlice = Xss()
 		case "lfi":
-			ListSlice = Lfi()
+			listSlice = Lfi()
 		default:
 			suggest := suggest.SuggestClosest(2, WordlistStruct.Wordlist, embedWordlists...)
 			fmt.Fprintf(os.Stderr,"[X] Wordlist not found\n")
@@ -87,4 +84,6 @@ func (WordlistStruct *Wordlist) LoadWordlist() {
 			}
 			os.Exit(2)
 	}
+	return listSlice
+
 }
