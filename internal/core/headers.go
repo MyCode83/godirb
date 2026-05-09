@@ -14,7 +14,7 @@ func applyHeaders(request *fasthttp.Request, headers []string) error{
 		}
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
-		if key != "" || value != "" {
+		if key == "" || value == "" {
 			continue
 		}
 		request.Header.Set(key, value)
