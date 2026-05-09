@@ -5,7 +5,6 @@ import (
 
 	// "godirb/internal/assemble"
 	"godirb/internal/tui"
-	"godirb/internal/wordlist"
 	"godirb/pkg/random"
 	"slices"
 	"strings"
@@ -22,7 +21,7 @@ func looksLikeService(err error) bool {
 
 func (c *Core) RunPorts(baseUrl string) {
 		result := tui.Result{}
-		for _, word := range wordlist.ListSlice {
+		for _, word := range c.WL {
 
 			select {
 			case <-c.Ctx.Done():

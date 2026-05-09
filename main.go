@@ -130,7 +130,7 @@ func main() {
 	go func() {
 		<-contextCancel.Done()
 		log.Println(runtime.NumGoroutine())
-		// log.Println("DEBUG: context canceled")
+		// log.Println(": context canceled")
 	}()
 	wd := wordlist.Wordlist{}
 	// pflags
@@ -158,10 +158,6 @@ func main() {
 	pflag.StringSliceVarP(&header, "header", "H", nil, "Add Header")
 	pflag.BoolVarP(&insecure, "insecure", "k", false, "Skip tls validation")
 	pflag.BoolVarP(&quiet, "quiet", "q", false, "Luego")
-
-
-
-
 
 
 	pflag.Usage = func() {
@@ -233,7 +229,7 @@ func main() {
 		if !pflag.Lookup("timeout").Changed {
 			timeout = time.Duration(500) * time.Millisecond
 		}
-		log.Printf("DEBUG: %s\n", wd.Wordlist)
+		log.Printf(": %s\n", wd.Wordlist)
 		switch  {
 		case timeout > time.Second:
 			fmt.Printf("[!] High timeout (%s). Scan may be slow.\n", timeout)
@@ -246,14 +242,14 @@ func main() {
 		}
 	}
 
-	wd.LoadWordlist() // Load Wordlist
+	wl := wd.LoadWordlist() // Load Wordlist
 
 	// Basic-Auth
 	if password != "" && username != "" {
 		auth = assemble.BuildBasicAuth(username, password)
 	}
 
-	log.Printf("DEBUG: %s\n", wd.Wordlist)
+	
 if !quiet {
 	fmt.Println("\n\n------------------")
 	fmt.Println("[*] Url: ", BaseURL)
@@ -274,15 +270,13 @@ if !quiet {
 	fmt.Println("------------------\n")
 }
 
-	log.Printf("DEBUG: %s\n", wd.Wordlist)
-	
-	
+
 	limiter := make(chan struct{}, threads)
 	var dirsChan chan string
 	if mode == core.ModeDir {
 		dirsChan = make(chan string, threads * 50)
 	}
-	log.Printf("DEBUG: %s\n", wordlist.ListSlice[0])
+
 	engine := &core.Core{
 		// Mode
 		Mode: mode,
@@ -317,6 +311,9 @@ if !quiet {
 
 		// WG
 		WG: &wg, 
+
+		// WordList
+		WL: wl,
 
 		// State
 		VisitedDirs: make(map[string]bool),
