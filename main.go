@@ -89,12 +89,12 @@ func main() {
 		log.Println(runtime.NumGoroutine())
 		// log.Println(": context canceled")
 	}()
-
 	cfg, wd := cli.ParseFlags()
 	cli.ValidateFlags(&cfg)
+	mode = cli.SelectMode(mode, cfg)
+	
 	// wd = instance
 	// wl = wordlist slice
-
 	client = assemble.BuildProxyAndClient(cfg.Proxy, cfg.Timeout, cfg.Insecure) // Fasthttp-Client
 	switch mode {
 	case core.ModeFuzz:
@@ -231,7 +231,6 @@ func main() {
 		engine.Baseline = baseline
 
 	}
-	fmt.Println("DEBUG>:", (mode == core.ModeDir))
 	for result := range engine.Run(cfg.BaseURL) {
 		tui.Print(result, cfg.Quiet)
 	}

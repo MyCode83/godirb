@@ -37,6 +37,8 @@ var preUserAgents = []string{
 
 
 type Config struct {
+	Test string
+
 	// Flags
 	URL        string
 	BaseURL	   string

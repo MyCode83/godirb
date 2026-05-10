@@ -1,3 +1,5 @@
 pycomps/
 server/
 .vscode
+.gocache
+*.exe
