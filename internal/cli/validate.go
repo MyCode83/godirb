@@ -6,8 +6,7 @@ import (
 
 	"godirb/internal/duration"
 	"godirb/internal/confirmation"
-	"godirb/internal/core"
-	"godirb/pkg/parse"
+
 
 	"github.com/fatih/color"
 )
@@ -27,16 +26,16 @@ func ValidateFlags(cfg *Config) {
 	cfg.Delay, delayErr = duration.ParseDuration(cfg.RawDelay, "ms")
 	// Delay error
 	if delayErr != nil {
-		fmt.Fprintf(os.Stderr, "[X] An error ocurred during parsing durantion.\nCheck if you spelled it correctly '%s'", cfg.RawDelay)
+		fmt.Fprintf(os.Stderr, "[X] An error ocurred during parsing durantion.\nCheck if you spelled it correctly '%s'\n", cfg.RawDelay)
 		os.Exit(1)		
 	}
 	// Timeout error
 	if timeoutErr != nil {
-		fmt.Fprintf(os.Stderr, "[X] An error ocurred during parsing durantion.\nCheck if you spelled it correctly '%s'", cfg.RawTimeout)
+		fmt.Fprintf(os.Stderr, "[X] An error ocurred during parsing durantion.\nCheck if you spelled it correctly '%s'\n", cfg.RawTimeout)
 		os.Exit(1)
 	}
 	if strings.TrimSpace(cfg.URL) == "" {
-		fmt.Fprintln(os.Stderr, "[X] Error, missing '--cfg.URL'(-u) flag")
+		fmt.Fprintln(os.Stderr, "[X] Error, missing '--url'(-u) flag")
 		fmt.Fprintln(os.Stderr, "Run godirb --help for usage")
 		os.Exit(2)
 	}
@@ -49,7 +48,7 @@ func ValidateFlags(cfg *Config) {
 
 	}
 	if cfg.Threads <= 0 {
-		fmt.Fprintf(os.Stderr, "[X] Error, you can't send %d cfg.Threads.\n", cfg.Threads)
+		fmt.Fprintf(os.Stderr, "[X] Error, you can't send %d threads.\n", cfg.Threads)
 		os.Exit(2)
 	}
 	if !useColors {
@@ -58,10 +57,5 @@ func ValidateFlags(cfg *Config) {
 	if cfg.Timeout <= 0 {
 		fmt.Printf("[X] Error: timeout must be greater than 0\n")
 		os.Exit(2)
-	}
-	if parse.ExtractPort(cfg.BaseURL) == cfg.Placeholder{
-		mode = core.ModePort
-	} else if strings.Contains(cfg.BaseURL, cfg.Placeholder) {
-		mode = core.ModeFuzz
 	}
 }
