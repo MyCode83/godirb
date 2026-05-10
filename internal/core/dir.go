@@ -95,7 +95,6 @@ func (c *Core) RunDir(baseURL string) {
 				}
 
 				fullURL := fmt.Sprintf("%s/%s", dir, word)
-				fmt.Println(fullURL)
 				request.SetRequestURI(fullURL)
 
 
@@ -194,7 +193,6 @@ func (c *Core) RunDir(baseURL string) {
 					}
 				}
 				if slices.Contains(c.IgnoreCodes, status) {
-					fmt.Println("IGNORED")
 					return
 
 				}
