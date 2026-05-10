@@ -1,12 +1,16 @@
 package core
-func (c *Core) Run(baseUrl string) {
+
+func (c *Core) Run(baseUrl string) <-chan Result {
 	switch c.Mode {
 	case ModeDir:
-		c.RunDir(baseUrl)
+		return c.RunDir(baseUrl)
 	case ModeFuzz:
-		c.RunFuzz(baseUrl)
+		return c.RunFuzz(baseUrl)
 	case ModePort:
-		c.RunPorts(baseUrl)	
+		return c.RunPorts(baseUrl)
 	}
 
+	results := make(chan Result)
+	close(results)
+	return results
 }
