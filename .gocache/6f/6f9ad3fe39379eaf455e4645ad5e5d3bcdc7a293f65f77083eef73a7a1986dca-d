@@ -1,0 +1,5 @@
+./dialer.go
+./doc.go
+./http.go
+./proxy_env.go
+./socks5.go

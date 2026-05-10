@@ -9,9 +9,9 @@ import (
 
 	"time"
 
+	"godirb/pkg/random"
 	"os"
 	"os/signal"
-	"godirb/pkg/random"
 
 	"sync"
 	"syscall"
@@ -50,18 +50,13 @@ var (
 	tasksWG      sync.WaitGroup
 	visitedMutex sync.Mutex
 	mode         core.Mode = core.ModeDir
-
 )
-
-
 
 const version = "0.9.0"
 
 var preUserAgents = []string{
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
 }
-
-
 
 // others
 var (
@@ -87,7 +82,7 @@ func main() {
 		go func() {
 			time.Sleep(1 * time.Second)
 			os.Exit(1)
-    	}()
+		}()
 	}()
 	go func() {
 		<-contextCancel.Done()
@@ -95,16 +90,15 @@ func main() {
 		// log.Println(": context canceled")
 	}()
 
-
 	cfg, wd := cli.ParseFlags()
 	cli.ValidateFlags(&cfg)
 	// wd = instance
 	// wl = wordlist slice
-	
+
 	client = assemble.BuildProxyAndClient(cfg.Proxy, cfg.Timeout, cfg.Insecure) // Fasthttp-Client
 	switch mode {
 	case core.ModeFuzz:
-		if !pflag.Lookup("cfg.Placeholder").Changed {
+		if !pflag.Lookup("placeholder").Changed {
 			cfg.Exts = []string{}
 		}
 	case core.ModePort:
@@ -115,15 +109,15 @@ func main() {
 			cfg.Timeout = time.Duration(500) * time.Millisecond
 		}
 		log.Printf(": %s\n", wd.Wordlist)
-		switch  {
+		switch {
 		case cfg.Timeout > time.Second:
 			fmt.Printf("[!] High timeout (%s). Scan may be slow.\n", cfg.Timeout)
-		case cfg.Timeout >= time.Duration(5) * time.Second:
+		case cfg.Timeout >= time.Duration(5)*time.Second:
 			fmt.Printf("[!] Very high timeout (%s). Scan will be very slow.\nCTRL + C will take a while (up to 30s).\n", cfg.Timeout)
 		}
 	case core.ModeDir:
-		if !validate.ValidateUrl(cfg.BaseURL, client, cfg.Method, random.RandChoice(cfg.UserAgent)){
-	 		os.Exit(1)
+		if !validate.ValidateUrl(cfg.BaseURL, client, cfg.Method, random.RandChoice(cfg.UserAgent)) {
+			os.Exit(1)
 		}
 	}
 
@@ -134,7 +128,6 @@ func main() {
 		auth = assemble.BuildBasicAuth(cfg.Username, cfg.Password)
 	}
 
-	
 	if !cfg.Quiet {
 		fmt.Println("\n------------------")
 		fmt.Println("[*] Url: ", cfg.BaseURL)
@@ -144,7 +137,7 @@ func main() {
 		fmt.Println("[*] Delay: ", cfg.Delay)
 		fmt.Println("[*] UAs: ", len(cfg.UserAgent))
 		fmt.Print("[*] Mode: ")
-		switch mode{
+		switch mode {
 		case core.ModeDir:
 			fmt.Print("Dir\n")
 		case core.ModeFuzz:
@@ -155,11 +148,10 @@ func main() {
 		fmt.Printf("------------------\n\n")
 	}
 
-
 	limiter := make(chan struct{}, cfg.Threads)
 	var dirsChan chan string
 	if mode == core.ModeDir {
-		dirsChan = make(chan string, cfg.Threads * 50)
+		dirsChan = make(chan string, cfg.Threads*50)
 	}
 
 	engine := &core.Core{
@@ -168,22 +160,22 @@ func main() {
 
 		// Bools
 
-		Recursive:  cfg.Recursive,
+		Recursive: cfg.Recursive,
 
 		// Context
 		Ctx:    contextCancel,
 		Cancel: cancel,
 		// Config
 		Timeout: cfg.Timeout,
-		Delay: cfg.Delay,
-		Quiet: cfg.Quiet,
+		Delay:   cfg.Delay,
+		Quiet:   cfg.Quiet,
 
 		// HTTP
-		Client:      client,
-		Method:      cfg.Method,
-		UserAgents:  cfg.UserAgent,
-		AuthHeader:  auth,
-		Header:      cfg.Header,
+		Client:     client,
+		Method:     cfg.Method,
+		UserAgents: cfg.UserAgent,
+		AuthHeader: auth,
+		Header:     cfg.Header,
 		// cfg.Placeholder
 		Placeholder: cfg.Placeholder,
 		// Control
@@ -195,7 +187,7 @@ func main() {
 		DirsChan: dirsChan,
 
 		// WG
-		WG: &wg, 
+		WG: &wg,
 
 		// WordList
 		WL: wl,
@@ -205,8 +197,7 @@ func main() {
 
 		// Output / colors
 		Others: tui.Other,
-		File: tui.File,
-
+		File:   tui.File,
 	}
 	// Wildcard
 	switch mode {
@@ -218,13 +209,13 @@ func main() {
 		}
 		if wildcard.Active {
 			fmt.Printf("[!] Wildcard detected: %d | %d bytes \n", wildcard.Status, wildcard.Lenght)
-			
-			if cfg.Method != "GET" && !cfg.ForceHead{
+
+			if cfg.Method != "GET" && !cfg.ForceHead {
 				fmt.Printf("[!] Wildcard-like behavior detected using HEAD/SWITCH requests.\n")
 				fmt.Printf("You can skip this confirmation with puting '--force-head'\n")
 				fmt.Printf("HEAD/SWITCH responses do not include a body, so wildcard filtering\ncannot be done reliably and may produce false positives.\n")
 				fmt.Printf("\nSwitch cfg.Method to 'GET'? [y/N]: \n")
-				
+
 				if confirmation.WildcardConfirmation() {
 					cfg.Method = "GET"
 				}
@@ -238,9 +229,11 @@ func main() {
 			os.Exit(1)
 		}
 		engine.Baseline = baseline
-	
+
 	}
-	engine.Run(cfg.BaseURL)
-	wg.Wait()
+	fmt.Println("DEBUG>:", (mode == core.ModeDir))
+	for result := range engine.Run(cfg.BaseURL) {
+		tui.Print(result, cfg.Quiet)
+	}
 
 }
