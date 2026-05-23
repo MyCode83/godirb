@@ -105,7 +105,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					if c.Header != nil {
 						err := applyHeaders(request, c.Header)
 						if err != nil {
-							fmt.Println(err)
+							fmt.Fprintln(os.Stderr, err)
 						}
 					}
 

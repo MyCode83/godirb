@@ -67,7 +67,7 @@ var (
 )
 
 func main() {
-	log.SetOutput(os.Stdout)
+	log.SetOutput(os.Stderr)
 	_, ok := os.LookupEnv("GODIRB_NO_COLOR")
 	if ok {
 		color.NoColor = true
@@ -112,9 +112,9 @@ func main() {
 		log.Printf(": %s\n", wd.Wordlist)
 		switch {
 		case cfg.Timeout > time.Second:
-			fmt.Printf("[!] High timeout (%s). Scan may be slow.\n", cfg.Timeout)
+			fmt.Fprintf(os.Stderr, "[!] High timeout (%s). Scan may be slow.\n", cfg.Timeout)
 		case cfg.Timeout >= time.Duration(5)*time.Second:
-			fmt.Printf("[!] Very high timeout (%s). Scan will be very slow.\nCTRL + C will take a while (up to 30s).\n", cfg.Timeout)
+			fmt.Fprintf(os.Stderr, "[!] Very high timeout (%s). Scan will be very slow.\nCTRL + C will take a while (up to 30s).\n", cfg.Timeout)
 		}
 	case core.ModeDir:
 		if !validate.ValidateUrl(cfg.BaseURL, client, cfg.Method, random.RandChoice(cfg.UserAgent)) {
@@ -212,13 +212,13 @@ func main() {
 			os.Exit(2)
 		}
 		if wildcard.Active {
-			fmt.Printf("[!] Wildcard detected: %d | %d bytes \n", wildcard.Status, wildcard.Lenght)
+			fmt.Fprintf(os.Stderr, "[!] Wildcard detected: %d | %d bytes \n", wildcard.Status, wildcard.Lenght)
 
 			if cfg.Method != "GET" && !cfg.ForceHead {
-				fmt.Printf("[!] Wildcard-like behavior detected using HEAD/SWITCH requests.\n")
-				fmt.Printf("You can skip this confirmation with puting '--force-head'\n")
-				fmt.Printf("HEAD/SWITCH responses do not include a body, so wildcard filtering\ncannot be done reliably and may produce false positives.\n")
-				fmt.Printf("\nSwitch cfg.Method to 'GET'? [y/N]: \n")
+				fmt.Fprintf(os.Stderr, "[!] Wildcard-like behavior detected using HEAD/SWITCH requests.\n")
+				fmt.Fprintf(os.Stderr, "You can skip this confirmation with puting '--force-head'\n")
+				fmt.Fprintf(os.Stderr, "HEAD/SWITCH responses do not include a body, so wildcard filtering\ncannot be done reliably and may produce false positives.\n")
+				fmt.Fprintf(os.Stderr, "\nSwitch cfg.Method to 'GET'? [y/N]: \n")
 
 				if confirmation.WildcardConfirmation() {
 					cfg.Method = "GET"

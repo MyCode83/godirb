@@ -59,7 +59,7 @@ func ValidateFlags(cfg *Config) {
 		color.NoColor = true
 	}
 	if cfg.Timeout <= 0 {
-		fmt.Printf("[X] Error: timeout must be greater than 0\n")
+		fmt.Fprintln(os.Stderr, "[X] Error: timeout must be greater than 0")
 		os.Exit(2)
 	}
 }
