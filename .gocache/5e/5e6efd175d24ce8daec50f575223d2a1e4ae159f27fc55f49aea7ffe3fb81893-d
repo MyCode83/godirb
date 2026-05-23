@@ -1,9 +1,0 @@
-./big.go
-./common.go
-./lfi.go
-./medium.go
-./payloads.go
-./ports.go
-./small.go
-./wordlist.go
-./xss.go
