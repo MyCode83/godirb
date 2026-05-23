@@ -25,9 +25,6 @@ jobs:
           go-version: stable
           cache: true
 
-      - name: Verify GoReleaser config
-        run: goreleaser check
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
