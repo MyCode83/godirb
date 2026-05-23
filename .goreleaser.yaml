@@ -27,6 +27,7 @@ builds:
 
 archives:
   - id: default
+
     formats:
       - tar.gz
 
@@ -47,29 +48,26 @@ checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
 
 changelog:
-  use: git
   sort: asc
-  abbrev: -1
-  format: "{{ .Message }}"
-  title: "Changelog"
 
   filters:
     include:
-      - '^(feat|feature)(\([^)]+\))?!?: .+'
-      - '^fix(\([^)]+\))?!?: .+'
-      - '^refactor(\([^)]+\))?!?: .+'
+      - "^feat"
+      - "^feature"
+      - "^fix"
+      - "^refactor"
 
   groups:
-    - title: "Features"
-      regexp: '^.*(feat|feature)(\([^)]+\))?!?: .+'
+    - title: Features
+      regexp: "^feat|^feature"
       order: 0
 
-    - title: "Bug fixes"
-      regexp: '^.*fix(\([^)]+\))?!?: .+'
+    - title: Bug fixes
+      regexp: "^fix"
       order: 1
 
-    - title: "Refactors"
-      regexp: '^.*refactor(\([^)]+\))?!?: .+'
+    - title: Refactors
+      regexp: "^refactor"
       order: 2
 
 release:
