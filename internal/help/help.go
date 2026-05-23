@@ -18,9 +18,12 @@ FLAGS:
 	-H   --header slice         Add custom HTTP headers
 	-h   --help                 Show this help message
 	-i   --ignore slice         Comma-separated list of HTTP status codes to ignore (default: 404,400,405,408)
+	     --csv                  Print results as CSV
 	-k   --insecure             Skip TLS certificate verification
+	     --json                 Print results as JSON
 	-m   --method string        HTTP method to use: GET, HEAD, SWITCH (rotate)
 	-n   --no-color             Disable colored output
+	-o   --output string        Write results to file
 	-p   --proxy string         HTTP/S proxy (e.g. http://127.0.0.1:8080)
 	-P   --password string      Password for Basic Auth
 		 --placeholder string   Fuzzing placeholder (default: FUZZ)

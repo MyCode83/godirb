@@ -1,13 +1,14 @@
 package cli
+
 import (
-	"godirb/internal/wordlist"
 	"github.com/spf13/pflag"
 	"godirb/internal/help"
+	"godirb/internal/wordlist"
 
 	"fmt"
 )
 
-func ParseFlags() (Config, wordlist.Wordlist){
+func ParseFlags() (Config, wordlist.Wordlist) {
 	// Objects
 	cfg := Config{}
 	wd := wordlist.Wordlist{}
@@ -23,7 +24,7 @@ func ParseFlags() (Config, wordlist.Wordlist){
 	pflag.StringSliceVarP(&cfg.UserAgent, "user-agent", "a", preUserAgents, "Comma-separated list of User-Agents to rotate")
 	// bools
 	pflag.BoolVarP(&cfg.NoColor, "no-color", "n", false, "Disable colored output") // no color
-	pflag.BoolVarP(&cfg.Recursive, "cfg.Recursive", "r", false, "Recursive mode")      // cfg.Recursive
+	pflag.BoolVarP(&cfg.Recursive, "cfg.Recursive", "r", false, "Recursive mode")  // cfg.Recursive
 	// forces
 	pflag.BoolVarP(&cfg.ForceHead, "force-head", "", false, "Skip wd confirmation")
 	pflag.BoolVarP(&cfg.ForceThreads, "force-threads", "", false, "Skip cfg.Threads confirmation")
@@ -37,7 +38,9 @@ func ParseFlags() (Config, wordlist.Wordlist){
 	pflag.StringSliceVarP(&cfg.Header, "header", "H", nil, "Add cfg.Header")
 	pflag.BoolVarP(&cfg.Insecure, "insecure", "k", false, "Skip tls validation")
 	pflag.BoolVarP(&cfg.Quiet, "quiet", "q", false, "Luego")
-
+	pflag.BoolVar(&cfg.JSON, "json", false, "Print results as JSON")
+	pflag.BoolVar(&cfg.CSV, "csv", false, "Print results as CSV")
+	pflag.StringVarP(&cfg.Output, "output", "o", "", "Write results to file")
 
 	pflag.Usage = func() {
 		fmt.Println(help.PrintHelp())
