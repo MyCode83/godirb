@@ -2,5 +2,6 @@ pycomps/
 server/
 .vscode
 .gocache
+.gotmp
 *.exe
 *.txt
