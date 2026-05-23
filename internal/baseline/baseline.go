@@ -2,6 +2,7 @@ package baseline
 
 import (
 	"fmt"
+	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/pkg/maths"
 	"github.com/MyCode83/godirb/pkg/random"
 	"strings"
@@ -17,6 +18,7 @@ type Baseline struct {
 
 func BuildBaseLine(baseUrl string, client *fasthttp.Client, placeholder string) (*Baseline, error) {
 	const tries = 3
+	debug.Printf("baseline start base_url=%q placeholder=%q tries=%d", baseUrl, placeholder, tries)
 	var status int
 	var lenght int
 
@@ -25,6 +27,7 @@ func BuildBaseLine(baseUrl string, client *fasthttp.Client, placeholder string) 
 
 	parts := strings.Split(baseUrl, placeholder)
 	if len(parts) != 2 {
+		debug.Printf("baseline invalid placeholder occurrences=%d", len(parts)-1)
 		return nil, fmt.Errorf("[!] Placeholder must appear only once\n")
 	}
 	request := fasthttp.AcquireRequest()
@@ -39,13 +42,17 @@ func BuildBaseLine(baseUrl string, client *fasthttp.Client, placeholder string) 
 
 		request.SetRequestURI(url)
 
+		debug.Request("baseline", request)
 		err := client.Do(request, response)
 		if err != nil {
+			debug.Error("baseline", err)
 			return nil, fmt.Errorf("[!] %w\n", err)
 		}
+		debug.Response("baseline", response)
 		if i == 1 {
 			status = response.StatusCode()
 			lenght = len(response.Body())
+			debug.Printf("baseline reference sample status=%d length=%d", status, lenght)
 		}
 		lenghts = append(lenghts, len(response.Body()))
 
@@ -60,5 +67,6 @@ func BuildBaseLine(baseUrl string, client *fasthttp.Client, placeholder string) 
 		Lenght:    lenght,
 		Tolerance: tolerance,
 	}
+	debug.Printf("baseline ready status=%d length=%d tolerance=%d samples=%v", status, lenght, tolerance, lenghts)
 	return baseline, nil
 }

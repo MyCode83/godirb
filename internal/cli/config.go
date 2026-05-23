@@ -49,6 +49,7 @@ type Config struct {
 	// bool
 	NoColor   bool
 	Recursive bool
+	Debug     bool
 	//forces
 	ForceHead    bool
 	ForceThreads bool

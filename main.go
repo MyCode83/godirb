@@ -26,6 +26,7 @@ import (
 	"github.com/MyCode83/godirb/internal/confirmation"
 
 	"github.com/MyCode83/godirb/internal/core" // core
+	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/output"
 	"github.com/MyCode83/godirb/internal/validate"
 
@@ -91,23 +92,33 @@ func main() {
 		// log.Println(": context canceled")
 	}()
 	cfg, wd := cli.ParseFlags()
+	debug.Set(cfg.Debug)
+	debug.Printf("parsed flags url=%q wordlist=%q threads=%d timeout=%q delay=%q method=%q recursive=%t quiet=%t json=%t csv=%t output=%q",
+		cfg.URL, wd.Wordlist, cfg.Threads, cfg.RawTimeout, cfg.RawDelay, cfg.Method, cfg.Recursive, cfg.Quiet, cfg.JSON, cfg.CSV, cfg.Output)
 	cli.ValidateFlags(&cfg)
+	debug.Printf("validated flags base_url=%q timeout=%s delay=%s ignore=%v exts=%v headers=%d proxy=%q insecure=%t",
+		cfg.BaseURL, cfg.Timeout, cfg.Delay, cfg.IgnoreCode, cfg.Exts, len(cfg.Header), cfg.Proxy, cfg.Insecure)
 	mode = cli.SelectMode(mode, cfg)
+	debug.Printf("selected mode=%d", mode)
 
 	// wd = instance
 	// wl = wordlist slice
 	client = assemble.BuildProxyAndClient(cfg.Proxy, cfg.Timeout, cfg.Insecure) // Fasthttp-Client
+	debug.Printf("http client ready proxy=%t timeout=%s insecure=%t", cfg.Proxy != "", cfg.Timeout, cfg.Insecure)
 	switch mode {
 	case core.ModeFuzz:
 		if !pflag.Lookup("placeholder").Changed {
 			cfg.Exts = []string{}
+			debug.Printf("fuzz mode without explicit placeholder; extensions disabled")
 		}
 	case core.ModePort:
 		if !pflag.Lookup("wordlist").Changed {
 			wd.Wordlist = "ports"
+			debug.Printf("port mode without explicit wordlist; using ports wordlist")
 		}
 		if !pflag.Lookup("timeout").Changed {
 			cfg.Timeout = time.Duration(500) * time.Millisecond
+			debug.Printf("port mode without explicit timeout; using %s", cfg.Timeout)
 		}
 		log.Printf(": %s\n", wd.Wordlist)
 		switch {
@@ -123,14 +134,17 @@ func main() {
 	}
 
 	wl := wd.LoadWordlist() // Load Wordlist
+	debug.Printf("loaded wordlist entries=%d source=%q", len(wl), wd.Wordlist)
 
 	// Basic-Auth
 	if cfg.Password != "" && cfg.Username != "" {
 		auth = assemble.BuildBasicAuth(cfg.Username, cfg.Password)
+		debug.Printf("basic auth enabled user=%q", cfg.Username)
 	}
 
 	outputFormat := output.FromFlags(cfg.JSON, cfg.CSV)
 	collectOutput := cfg.Output != "" || outputFormat != output.FormatText
+	debug.Printf("output format=%d collect_output=%t", outputFormat, collectOutput)
 
 	if !cfg.Quiet && !(collectOutput && cfg.Output == "") {
 		fmt.Println("\n------------------")
@@ -173,6 +187,7 @@ func main() {
 		Timeout: cfg.Timeout,
 		Delay:   cfg.Delay,
 		Quiet:   cfg.Quiet,
+		Debug:   cfg.Debug,
 
 		// HTTP
 		Client:     client,
@@ -206,11 +221,14 @@ func main() {
 	// Wildcard
 	switch mode {
 	case core.ModeDir:
+		debug.Printf("detecting wildcard")
 		wildcard, err := wildcard.DetectWildcard(client, cfg.BaseURL, cfg.Placeholder, cfg.UserAgent...)
 		if err != nil {
+			debug.Error("wildcard detection", err)
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(2)
 		}
+		debug.Printf("wildcard result active=%t status=%d length=%d tolerance=%d", wildcard.Active, wildcard.Status, wildcard.Lenght, wildcard.Tolerance)
 		if wildcard.Active {
 			fmt.Fprintf(os.Stderr, "[!] Wildcard detected: %d | %d bytes \n", wildcard.Status, wildcard.Lenght)
 
@@ -227,16 +245,20 @@ func main() {
 		}
 		engine.Wildcard = wildcard
 	case core.ModeFuzz:
+		debug.Printf("building baseline")
 		baseline, err := baseline.BuildBaseLine(cfg.BaseURL, client, cfg.Placeholder)
 		if err != nil {
+			debug.Error("baseline build", err)
 			fmt.Fprintf(os.Stderr, "%s", err)
 			os.Exit(1)
 		}
+		debug.Printf("baseline result status=%d length=%d tolerance=%d", baseline.Status, baseline.Lenght, baseline.Tolerance)
 		engine.Baseline = baseline
 
 	}
 	results := make([]core.Result, 0)
 	for result := range engine.Run(cfg.BaseURL) {
+		debug.Printf("result prefix=%s status=%d size=%d url=%s extra=%q", result.Prefix, result.Status, result.Size, result.URL, result.Extra)
 		if collectOutput {
 			results = append(results, result)
 			continue
@@ -244,10 +266,13 @@ func main() {
 		tui.Print(result, cfg.Quiet)
 	}
 	if collectOutput {
+		debug.Printf("writing collected results count=%d", len(results))
 		if err := output.Write(results, outputFormat, cfg.Output, cfg.Quiet); err != nil {
+			debug.Error("output write", err)
 			fmt.Fprintf(os.Stderr, "[X] Error writing output: %v\n", err)
 			os.Exit(1)
 		}
 	}
+	debug.Printf("scan finished")
 
 }

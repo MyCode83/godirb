@@ -46,6 +46,7 @@ type Core struct {
 	Wildcard    *wildcard.Wildcard
 	Baseline    *baseline.Baseline
 	Quiet       bool
+	Debug       bool
 
 	// Colors
 	Others *color.Color

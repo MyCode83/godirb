@@ -15,6 +15,7 @@ USAGE:
 FLAGS: 
 	-a   --user-agent slice     Comma-separated list of User-Agents to rotate
 	-d   --delay string         Delay between requests in milliseconds (default: 0)
+	     --debug                Enable verbose debug output
 	-H   --header slice         Add custom HTTP headers (repeat or comma-separate)
 	-h   --help                 Show this help message
 	-i   --ignore slice         Comma-separated list of HTTP status codes to ignore (default: 404,400,405,408)

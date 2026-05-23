@@ -25,6 +25,7 @@ func ParseFlags() (Config, wordlist.Wordlist) {
 	// bools
 	pflag.BoolVarP(&cfg.NoColor, "no-color", "n", false, "Disable colored output") // no color
 	pflag.BoolVarP(&cfg.Recursive, "recursive", "r", false, "Enable recursive directory enumeration")
+	pflag.BoolVar(&cfg.Debug, "debug", false, "Enable verbose debug output")
 	// forces
 	pflag.BoolVarP(&cfg.ForceHead, "force-head", "", false, "Skip HEAD/SWITCH wildcard confirmation")
 	pflag.BoolVarP(&cfg.ForceThreads, "force-threads", "", false, "Skip high thread-count confirmation")

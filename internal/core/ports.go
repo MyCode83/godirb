@@ -5,6 +5,7 @@ import (
 
 	// "github.com/MyCode83/godirb/internal/assemble"
 
+	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/pkg/random"
 	"slices"
 	"strings"
@@ -15,13 +16,16 @@ import (
 
 func looksLikeService(err error) bool {
 	s := err.Error()
-	return strings.Contains(s, "tls") ||
+	result := strings.Contains(s, "tls") ||
 		strings.Contains(s, "EOF") ||
 		strings.Contains(s, "reset")
+	debug.Printf("port service error check error=%q result=%t", s, result)
+	return result
 }
 
 func (c *Core) RunPorts(baseUrl string) <-chan Result {
 	results := make(chan Result)
+	debug.Printf("ports run start base_url=%q words=%d timeout=%s", baseUrl, len(c.WL), c.Timeout)
 
 	go func() {
 		defer close(results)
@@ -31,6 +35,7 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 
 			select {
 			case <-c.Ctx.Done():
+				debug.Printf("ports run canceled before scheduling word=%q", word)
 				break launch
 			case c.Limiter <- struct{}{}:
 			}
@@ -69,12 +74,15 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 				if c.AuthHeader != "" {
 					request.Header.Set("Authorization", c.AuthHeader)
 				}
+				debug.Request("ports", request)
 				err := c.Client.DoTimeout(request, response, c.Timeout)
 				if c.Ctx.Err() != nil {
+					debug.Printf("ports worker canceled url=%s", fullURL)
 					return
 				}
 				status := response.StatusCode()
 				if err != nil {
+					debug.Error("ports", err)
 					if looksLikeService(err) {
 						results <- Result{
 							Prefix: "?",
@@ -85,12 +93,14 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 					}
 					return
 				}
+				debug.Response("ports", response)
 
 				lenght := len(response.Body())
 
 				request.Reset()
 				response.Reset()
 				if slices.Contains(c.IgnoreCodes, status) {
+					debug.Printf("ports ignored url=%s status=%d", fullURL, status)
 					return
 				}
 				results <- Result{
@@ -101,9 +111,11 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 				}
 
 				if c.Delay > 0 {
+					debug.Printf("ports delay=%s url=%s", c.Delay, fullURL)
 					select {
 					case <-time.After(c.Delay):
 					case <-c.Ctx.Done():
+						debug.Printf("ports canceled during delay url=%s", fullURL)
 						return
 					}
 				}
