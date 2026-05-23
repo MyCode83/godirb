@@ -3,3 +3,4 @@ server/
 .vscode
 .gocache
 *.exe
+*.txt
