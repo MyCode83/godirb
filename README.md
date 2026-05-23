@@ -1,6 +1,6 @@
 # godirb
 
-[![Go](https://img.shields.io/badge/Go-1.25.1-00ADD8?logo=go)](https://go.dev/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Latest release](https://img.shields.io/github/v/release/MyCode83/godirb?sort=semver)](https://github.com/MyCode83/godirb/releases) [![GoReleaser](https://github.com/MyCode83/godirb/actions/workflows/release.yml/badge.svg)](https://github.com/MyCode83/godirb/actions/workflows/release.yml)
+[![Go](https://img.shields.io/badge/Go-1.25.1-00ADD8?logo=go)](https://go.dev/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Latest release](https://img.shields.io/github/v/release/MyCode83/godirb?sort=semver)](https://github.com/MyCode83/godirb/releases) 
 
 `godirb` is a fast recursive directory/file brute-forcer written in Go.
 
@@ -17,7 +17,7 @@ DirSearch is a mature web path scanner. godirb is smaller on purpose.
 | Use custom wordlists | ✅ | ✅ |
 | Made in Go | ✅ | ❌ |
 | Works as a single binary | ✅ | ❌ |
-| GoReleaser tag releases | ✅ | ❌ |
+| Baseline filter with heuristics | ✅ | ❌ |
 | Embedded wordlists as Go slices | ✅ | ❌ |
 | Default embedded `medium` wordlist | ✅ | ❌ |
 | Basic scan without runtime wordlist files | ✅ | ❌ |
