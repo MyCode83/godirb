@@ -1,9 +1,9 @@
 package cli
 
 import (
+	"github.com/MyCode83/godirb/internal/help"
+	"github.com/MyCode83/godirb/internal/wordlist"
 	"github.com/spf13/pflag"
-	"godirb/internal/help"
-	"godirb/internal/wordlist"
 
 	"fmt"
 )

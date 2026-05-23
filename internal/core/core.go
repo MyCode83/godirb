@@ -2,8 +2,8 @@ package core
 
 import (
 	"context"
-	"godirb/internal/baseline"
-	"godirb/internal/wildcard"
+	"github.com/MyCode83/godirb/internal/baseline"
+	"github.com/MyCode83/godirb/internal/wildcard"
 
 	"github.com/fatih/color"
 	"sync"
@@ -11,12 +11,15 @@ import (
 
 	"github.com/valyala/fasthttp"
 )
+
 type Mode int
+
 const (
 	ModeDir Mode = iota
 	ModeFuzz
 	ModePort
 )
+
 type Core struct {
 	// Mode
 	Mode Mode
@@ -26,40 +29,36 @@ type Core struct {
 
 	// infra
 	Client *fasthttp.Client
-	Ctx context.Context
+	Ctx    context.Context
 	Cancel context.CancelFunc
-
 
 	// Config
 
-	Method	 string
+	Method      string
 	Placeholder string
-	UserAgents	 []string
-	IgnoreCodes	 []int
-	Exts	[]string
-	Header []string
-	AuthHeader string
-	Delay	time.Duration
-	Timeout time.Duration
-	Wildcard *wildcard.Wildcard
-	Baseline *baseline.Baseline
-	Quiet bool
-
-
+	UserAgents  []string
+	IgnoreCodes []int
+	Exts        []string
+	Header      []string
+	AuthHeader  string
+	Delay       time.Duration
+	Timeout     time.Duration
+	Wildcard    *wildcard.Wildcard
+	Baseline    *baseline.Baseline
+	Quiet       bool
 
 	// Colors
 	Others *color.Color
-	File *color.Color
-	
+	File   *color.Color
+
 	// Concurrency
-	Limiter chan struct{}
+	Limiter  chan struct{}
 	DirsChan chan string
 
 	WG *sync.WaitGroup
 	WL []string
 
-
 	// State
-	VisitedDirs map[string]bool
+	VisitedDirs  map[string]bool
 	VisitedMutex sync.Mutex
 }

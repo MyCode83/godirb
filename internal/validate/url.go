@@ -2,12 +2,13 @@ package validate
 
 import (
 	"fmt"
+	"github.com/valyala/fasthttp"
 	parseurl "net/url"
 	"os"
 	"strings"
-	"github.com/valyala/fasthttp"
 )
-func ValidateUrl(raw string, client *fasthttp.Client, method string, userAgent string) bool{
+
+func ValidateUrl(raw string, client *fasthttp.Client, method string, userAgent string) bool {
 	methodSwitch := "GET"
 	u, err := parseurl.Parse(raw)
 	if err != nil {
@@ -24,7 +25,7 @@ func ValidateUrl(raw string, client *fasthttp.Client, method string, userAgent s
 	}
 	request := fasthttp.AcquireRequest()
 	response := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseRequest(request) 
+	defer fasthttp.ReleaseRequest(request)
 	defer fasthttp.ReleaseResponse(response)
 	request.SetRequestURI(raw)
 	request.Header.SetUserAgent(userAgent)
@@ -36,8 +37,8 @@ func ValidateUrl(raw string, client *fasthttp.Client, method string, userAgent s
 			methodSwitch = "HEAD"
 		} else {
 			methodSwitch = "GET"
-			}
-			request.Header.SetMethod(methodSwitch)
+		}
+		request.Header.SetMethod(methodSwitch)
 	}
 	fails := 0
 	for range 5 {
@@ -48,7 +49,7 @@ func ValidateUrl(raw string, client *fasthttp.Client, method string, userAgent s
 			return true
 		}
 
-	} 
+	}
 	fmt.Fprintf(os.Stderr, "\n[X] Err: Invalid URL. Check if you spelled it correctly '%s'\n", raw)
 	return false
 }

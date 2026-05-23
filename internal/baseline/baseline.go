@@ -2,18 +2,20 @@ package baseline
 
 import (
 	"fmt"
-	"godirb/pkg/random"
-	"godirb/pkg/maths"
+	"github.com/MyCode83/godirb/pkg/maths"
+	"github.com/MyCode83/godirb/pkg/random"
 	"strings"
 
 	"github.com/valyala/fasthttp"
 )
+
 type Baseline struct {
-	Status int
-	Lenght int
+	Status    int
+	Lenght    int
 	Tolerance int
 }
-func BuildBaseLine(baseUrl string, client *fasthttp.Client ,placeholder string) (*Baseline, error){
+
+func BuildBaseLine(baseUrl string, client *fasthttp.Client, placeholder string) (*Baseline, error) {
 	const tries = 3
 	var status int
 	var lenght int
@@ -47,7 +49,6 @@ func BuildBaseLine(baseUrl string, client *fasthttp.Client ,placeholder string) 
 		}
 		lenghts = append(lenghts, len(response.Body()))
 
-
 	}
 	min, max := maths.MinMax(lenghts...)
 	tolerance = max - min
@@ -55,8 +56,8 @@ func BuildBaseLine(baseUrl string, client *fasthttp.Client ,placeholder string) 
 		tolerance = 10
 	}
 	baseline := &Baseline{
-		Status: status,
-		Lenght: lenght,
+		Status:    status,
+		Lenght:    lenght,
 		Tolerance: tolerance,
 	}
 	return baseline, nil

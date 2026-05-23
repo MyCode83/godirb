@@ -1,10 +1,12 @@
 package confirmation
+
 import (
-	"os"
 	"bufio"
 	"fmt"
+	"os"
 	"strings"
 )
+
 func ThreadsConfirmation(msg string) bool {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print(msg + " (Y/N): ")

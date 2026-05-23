@@ -1,12 +1,12 @@
 package core
 
 import (
+	"fmt"
 	"github.com/valyala/fasthttp"
 	"strings"
-	"fmt"
 )
 
-func applyHeaders(request *fasthttp.Request, headers []string) error{
+func applyHeaders(request *fasthttp.Request, headers []string) error {
 	for _, header := range headers {
 		parts := strings.Split(header, ":")
 		if len(parts) != 2 {

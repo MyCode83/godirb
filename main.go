@@ -9,7 +9,7 @@ import (
 
 	"time"
 
-	"godirb/pkg/random"
+	"github.com/MyCode83/godirb/pkg/random"
 	"os"
 	"os/signal"
 
@@ -21,18 +21,18 @@ import (
 	"github.com/valyala/fasthttp"
 
 	// Godirb-lib
-	"godirb/internal/assemble"
-	"godirb/internal/cli"
-	"godirb/internal/confirmation"
+	"github.com/MyCode83/godirb/internal/assemble"
+	"github.com/MyCode83/godirb/internal/cli"
+	"github.com/MyCode83/godirb/internal/confirmation"
 
-	"godirb/internal/core" // core
-	"godirb/internal/output"
-	"godirb/internal/validate"
+	"github.com/MyCode83/godirb/internal/core" // core
+	"github.com/MyCode83/godirb/internal/output"
+	"github.com/MyCode83/godirb/internal/validate"
 
-	"godirb/internal/baseline"
-	"godirb/internal/wildcard"
+	"github.com/MyCode83/godirb/internal/baseline"
+	"github.com/MyCode83/godirb/internal/wildcard"
 
-	"godirb/internal/tui"
+	"github.com/MyCode83/godirb/internal/tui"
 
 	"github.com/fatih/color"
 )

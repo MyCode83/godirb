@@ -1,4 +1,4 @@
-module godirb
+module github.com/MyCode83/godirb
 
 go 1.25.1
 

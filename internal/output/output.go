@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"godirb/internal/core"
+	"github.com/MyCode83/godirb/internal/core"
 )
 
 type Format int

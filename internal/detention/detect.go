@@ -4,11 +4,12 @@ import (
 	"github.com/valyala/fasthttp"
 	"strings"
 )
+
 func Detect(client *fasthttp.Client, baseURL string, path string, method string) (DetentionResult, error) {
 	var result DetentionResult
 	var err error
 	url := strings.TrimSpace(baseURL)
-	url = strings.TrimRight(url, "/") + "/" + strings.TrimLeft(url,"/")
+	url = strings.TrimRight(url, "/") + "/" + strings.TrimLeft(url, "/")
 
 	request := fasthttp.AcquireRequest()
 	response := fasthttp.AcquireResponse()

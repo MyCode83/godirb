@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"godirb/internal/core"
+	"github.com/MyCode83/godirb/internal/core"
 )
 
 func TestFormatTextResult(t *testing.T) {

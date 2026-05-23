@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"godirb/internal/core"
+	"github.com/MyCode83/godirb/internal/core"
 	"sync"
 	"time"
 

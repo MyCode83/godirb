@@ -3,9 +3,9 @@ package core
 import (
 	"fmt"
 
-	// "godirb/internal/assemble"
+	// "github.com/MyCode83/godirb/internal/assemble"
 
-	"godirb/pkg/random"
+	"github.com/MyCode83/godirb/pkg/random"
 	"slices"
 	"strings"
 	"time"

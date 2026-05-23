@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	"godirb/internal/core"
-	"godirb/internal/output"
+	"github.com/MyCode83/godirb/internal/core"
+	"github.com/MyCode83/godirb/internal/output"
 )
 
 var mu sync.Mutex

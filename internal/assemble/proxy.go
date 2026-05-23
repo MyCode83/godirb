@@ -1,13 +1,14 @@
 package assemble
+
 import (
-	"github.com/valyala/fasthttp/fasthttpproxy"
-	"strings"
-	"fmt"
-	"os"
-	"time"
-	"github.com/valyala/fasthttp"
-	"godirb/internal/confirmation"
 	"crypto/tls"
+	"fmt"
+	"github.com/MyCode83/godirb/internal/confirmation"
+	"github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp/fasthttpproxy"
+	"os"
+	"strings"
+	"time"
 )
 
 func BuildProxyAndClient(proxy string, timeout time.Duration, insecure bool) *fasthttp.Client {
@@ -15,14 +16,14 @@ func BuildProxyAndClient(proxy string, timeout time.Duration, insecure bool) *fa
 		InsecureSkipVerify: insecure,
 	}
 	client := &fasthttp.Client{
-		
+
 		ReadTimeout:     timeout,
 		WriteTimeout:    timeout,
 		MaxConnDuration: timeout,
-		TLSConfig: TLS,
+		TLSConfig:       TLS,
 	}
 	if proxy != "" {
-		switch{
+		switch {
 		case strings.HasPrefix(proxy, "https://"):
 			client.Dial = fasthttpproxy.FasthttpHTTPDialer(proxy)
 		case strings.HasPrefix(proxy, "http://"):
@@ -32,7 +33,7 @@ func BuildProxyAndClient(proxy string, timeout time.Duration, insecure bool) *fa
 		case strings.HasPrefix(proxy, "socks5://"):
 			client.Dial = fasthttpproxy.FasthttpSocksDialer(proxy)
 		default:
-			fmt.Fprintf(os.Stderr,"\n[!] Unkown proxy scheme %s", proxy)
+			fmt.Fprintf(os.Stderr, "\n[!] Unkown proxy scheme %s", proxy)
 			if !confirmation.ProxyConfirmation() {
 				os.Exit(2)
 			}

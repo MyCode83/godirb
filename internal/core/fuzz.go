@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"godirb/pkg/random"
+	"github.com/MyCode83/godirb/pkg/random"
 	"slices"
 	"strings"
 

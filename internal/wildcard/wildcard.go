@@ -1,9 +1,8 @@
 package wildcard
 
 import (
-
-	"godirb/pkg/random"
-	"godirb/pkg/maths"
+	"github.com/MyCode83/godirb/pkg/maths"
+	"github.com/MyCode83/godirb/pkg/random"
 	"strings"
 
 	"github.com/valyala/fasthttp"
@@ -13,13 +12,14 @@ import (
 
 // Wildcard struct
 type Wildcard struct {
-	Status int
-	Lenght int
-	Active bool
+	Status    int
+	Lenght    int
+	Active    bool
 	Tolerance int
 }
+
 // Wildcard funcion
-func DetectWildcard(client *fasthttp.Client, baseURL string, Placeholder string,userAgents ...string) (*Wildcard, error) {
+func DetectWildcard(client *fasthttp.Client, baseURL string, Placeholder string, userAgents ...string) (*Wildcard, error) {
 	var status int
 	var lenght int
 	const tries = 3
@@ -34,13 +34,12 @@ func DetectWildcard(client *fasthttp.Client, baseURL string, Placeholder string,
 			fullURL = baseURL + "/" + random.RandomString(12)
 		}
 
-		
 		request := fasthttp.AcquireRequest()
 		response := fasthttp.AcquireResponse()
 		request.SetRequestURI(fullURL)
 		request.Header.SetUserAgent(random.RandChoice(userAgents))
 		request.Header.SetMethod("GET")
-		
+
 		err := client.Do(request, response)
 		fasthttp.ReleaseRequest(request)
 		if err != nil {
@@ -60,11 +59,11 @@ func DetectWildcard(client *fasthttp.Client, baseURL string, Placeholder string,
 			if status != resStatusCode || lenght != bodyLen {
 				fasthttp.ReleaseResponse(response)
 				return &Wildcard{Active: false}, nil
-			} 
+			}
 		}
 		lenghts = append(lenghts, bodyLen)
 		fasthttp.ReleaseResponse(response)
-					
+
 	}
 	min, max := maths.MinMax(lenghts...)
 	tolerance = max - min
@@ -73,9 +72,9 @@ func DetectWildcard(client *fasthttp.Client, baseURL string, Placeholder string,
 	}
 
 	return &Wildcard{
-		Status: status,
-		Lenght: lenght,
-		Active: true,
+		Status:    status,
+		Lenght:    lenght,
+		Active:    true,
 		Tolerance: tolerance,
 	}, nil
 }

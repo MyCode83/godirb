@@ -1,8 +1,8 @@
 package cli
 
 import (
-	"godirb/internal/core"
-	"godirb/pkg/parse"
+	"github.com/MyCode83/godirb/internal/core"
+	"github.com/MyCode83/godirb/pkg/parse"
 	"strings"
 )
 

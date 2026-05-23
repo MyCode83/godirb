@@ -1,16 +1,17 @@
 package wordlist
 
 import (
-	_"embed"
-	"sync"
+	_ "embed"
 	"strings"
+	"sync"
 )
 
 //go:embed wordlists-txt/ports.txt
 var portsRaw string
 var portsSlice []string
 var portsOnce sync.Once
-func Ports() []string{
+
+func Ports() []string {
 	portsOnce.Do(func() {
 		portsSlice = strings.Split(strings.TrimSpace(strings.ReplaceAll(portsRaw, "\r\n", "\n")), "\n")
 	})

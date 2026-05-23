@@ -1,5 +1,6 @@
 package maths
-func MinMax(nums ...int)  (int, int){
+
+func MinMax(nums ...int) (int, int) {
 	min := nums[0]
 	max := nums[0]
 	for _, value := range nums {

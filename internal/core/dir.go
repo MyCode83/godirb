@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"godirb/internal/detention"
-	"godirb/internal/wildcard"
+	"github.com/MyCode83/godirb/internal/detention"
+	"github.com/MyCode83/godirb/internal/wildcard"
 
-	"godirb/pkg/random"
+	"github.com/MyCode83/godirb/pkg/random"
 	"os"
 	"slices"
 	"strings"

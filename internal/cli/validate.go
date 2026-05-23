@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"godirb/internal/confirmation"
-	"godirb/internal/duration"
+	"github.com/MyCode83/godirb/internal/confirmation"
+	"github.com/MyCode83/godirb/internal/duration"
 
 	"github.com/fatih/color"
 )

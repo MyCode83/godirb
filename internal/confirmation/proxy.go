@@ -1,10 +1,12 @@
 package confirmation
+
 import (
 	"bufio"
 	"fmt"
 	"os"
 	"strings"
 )
+
 func ProxyConfirmation() bool {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print(" (y/N): ")
