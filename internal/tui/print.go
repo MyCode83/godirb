@@ -6,13 +6,14 @@ import (
 	"sync"
 
 	"godirb/internal/core"
+	"godirb/internal/output"
 )
 
 var mu sync.Mutex
 
 func Print(result core.Result, quiet bool) {
 	if quiet {
-		fmt.Printf("%d %s %d\n", result.Status, result.URL, result.Size)
+		fmt.Println(output.FormatTextResult(result, quiet))
 
 	} else {
 
@@ -25,11 +26,11 @@ func Print(result core.Result, quiet bool) {
 		default:
 			if strings.TrimSpace(result.Extra) != "" {
 				mu.Lock()
-				Other.Printf("[%s] %s ---> %d %s | %d\n", result.Prefix, result.URL, result.Status, result.Extra, result.Size)
+				Other.Println(output.FormatTextResult(result, quiet))
 				mu.Unlock()
 			} else {
 				mu.Lock()
-				Other.Printf("[%s] %s ---> %d | %d\n", result.Prefix, result.URL, result.Status, result.Size)
+				Other.Println(output.FormatTextResult(result, quiet))
 				mu.Unlock()
 			}
 		}

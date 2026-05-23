@@ -26,6 +26,7 @@ import (
 	"godirb/internal/confirmation"
 
 	"godirb/internal/core" // core
+	"godirb/internal/output"
 	"godirb/internal/validate"
 
 	"godirb/internal/baseline"
@@ -92,7 +93,7 @@ func main() {
 	cfg, wd := cli.ParseFlags()
 	cli.ValidateFlags(&cfg)
 	mode = cli.SelectMode(mode, cfg)
-	
+
 	// wd = instance
 	// wl = wordlist slice
 	client = assemble.BuildProxyAndClient(cfg.Proxy, cfg.Timeout, cfg.Insecure) // Fasthttp-Client
@@ -128,7 +129,10 @@ func main() {
 		auth = assemble.BuildBasicAuth(cfg.Username, cfg.Password)
 	}
 
-	if !cfg.Quiet {
+	outputFormat := output.FromFlags(cfg.JSON, cfg.CSV)
+	collectOutput := cfg.Output != "" || outputFormat != output.FormatText
+
+	if !cfg.Quiet && !(collectOutput && cfg.Output == "") {
 		fmt.Println("\n------------------")
 		fmt.Println("[*] Url: ", cfg.BaseURL)
 		fmt.Println("[*] Method: ", cfg.Method)
@@ -231,8 +235,19 @@ func main() {
 		engine.Baseline = baseline
 
 	}
+	results := make([]core.Result, 0)
 	for result := range engine.Run(cfg.BaseURL) {
+		if collectOutput {
+			results = append(results, result)
+			continue
+		}
 		tui.Print(result, cfg.Quiet)
+	}
+	if collectOutput {
+		if err := output.Write(results, outputFormat, cfg.Output, cfg.Quiet); err != nil {
+			fmt.Fprintf(os.Stderr, "[X] Error writing output: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 }
