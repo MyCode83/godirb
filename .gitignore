@@ -5,3 +5,5 @@ server/
 .gotmp
 *.exe
 *.txt
+# Added by goreleaser init:
+dist/
