@@ -147,6 +147,7 @@ func main() {
 	debug.Printf("output format=%d collect_output=%t", outputFormat, collectOutput)
 
 	if !cfg.Quiet && !(collectOutput && cfg.Output == "") {
+		fmt.Printf(banner)
 		fmt.Println("\n------------------")
 		fmt.Println("[*] Url: ", cfg.BaseURL)
 		fmt.Println("[*] Method: ", cfg.Method)
