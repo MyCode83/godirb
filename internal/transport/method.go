@@ -5,8 +5,9 @@ import "errors"
 type Method string
 
 const (
-	MethodGET  Method = "GET"
-	MethodHEAD Method = "HEAD"
+	MethodGET    Method = "GET"
+	MethodHEAD   Method = "HEAD"
+	MethodSwitch Method = "SWITCH"
 )
 
 var ErrInvalidMethod = errors.New("invalid method")
@@ -17,7 +18,7 @@ func (m Method) String() string {
 
 func (m Method) Valid() bool {
 	switch m {
-	case MethodGET, MethodHEAD:
+	case MethodGET, MethodHEAD, MethodSwitch:
 		return true
 	default:
 		return false
