@@ -20,6 +20,7 @@ func (c *Client) Do(opts *RequestOptions) (Response, error) {
 	defer fasthttp.ReleaseResponse(resp)
 
 	req.SetRequestURI(opts.URL)
+	req.Header.SetUserAgent(opts.UserAgent)
 
 	method := opts.methodForRequest()
 	req.Header.SetMethod(method.String())

@@ -9,6 +9,7 @@ type RequestOptions struct {
 	Method     Method
 	MethodMode MethodMode
 
+	UserAgent string
 	Headers []string
 }
 
