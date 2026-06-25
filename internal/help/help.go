@@ -34,6 +34,7 @@ FLAGS:
 	-T   --timeout string       Request timeout (default: 5s)
 	-u   --url string           Target URL (e.g. http://localhost)
 	-U   --user string          Username for Basic Auth
+	     --version              Print version and exit
 	-w   --wordlist string      Embedded wordlist name or path to custom wordlist (default: medium)
 	-x   --ext slice            File extensions to append (comma-separated)
 	     --force-head           Skip HEAD/SWITCH wildcard confirmation

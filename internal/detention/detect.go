@@ -2,50 +2,41 @@ package detention
 
 import (
 	"github.com/MyCode83/godirb/internal/debug"
-	"github.com/valyala/fasthttp"
+	"github.com/MyCode83/godirb/internal/transport"
 	"strings"
 )
 
-func Detect(client *fasthttp.Client, baseURL string, path string, method string) (DetentionResult, error) {
+func Detect(client *transport.Client, baseURL string, path string, method transport.Method, methodMode transport.MethodMode) (DetentionResult, error) {
 	var result DetentionResult
 	var err error
 	debug.Printf("detention start base_url=%q path=%q method=%q", baseURL, path, method)
 	url := strings.TrimSpace(baseURL)
 	url = strings.TrimRight(url, "/") + "/" + strings.TrimLeft(url, "/")
 
-	request := fasthttp.AcquireRequest()
-	response := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseRequest(request)
-	defer fasthttp.ReleaseResponse(response)
+	request := transport.RequestOptions{
+		URL:        url,
+		Method:     method,
+		MethodMode: methodMode,
+	}
 
 	// /path
-	request.Reset()
-	response.Reset()
-	request.SetRequestURI(url)
-	request.Header.SetMethod(method)
-	debug.Request("detention-path", request)
-	err = client.Do(request, response)
+	response, err := client.Do(&request)
 	if err != nil {
 		debug.Error("detention-path", err)
 		return result, err
 	}
-	debug.Response("detention-path", response)
-	status := response.StatusCode()
+	debug.Printf("detention-path response status=%d body=%d", response.StatusCode, response.Lenght)
+	status := response.StatusCode
 
 	// /path/
 
-	request.Reset()
-	response.Reset()
-	request.SetRequestURI(url)
-	request.Header.SetMethod(method)
-	debug.Request("detention-slash", request)
-	err = client.Do(request, response)
+	response, err = client.Do(&request)
 	if err != nil {
 		debug.Error("detention-slash", err)
 		return result, err
 	}
-	debug.Response("detention-slash", response)
-	status2 := response.StatusCode()
+	debug.Printf("detention-slash response status=%d body=%d", response.StatusCode, response.Lenght)
+	status2 := response.StatusCode
 	if status == 200 && (status2 == 200 || status2 == 301 || status2 == 302) {
 		result.IsDir = true
 	} else if status == 200 && status2 >= 400 {

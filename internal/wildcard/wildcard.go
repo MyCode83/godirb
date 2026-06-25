@@ -2,11 +2,10 @@ package wildcard
 
 import (
 	"github.com/MyCode83/godirb/internal/debug"
+	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/pkg/maths"
 	"github.com/MyCode83/godirb/pkg/random"
 	"strings"
-
-	"github.com/valyala/fasthttp"
 )
 
 // random string
@@ -20,7 +19,7 @@ type Wildcard struct {
 }
 
 // Wildcard funcion
-func DetectWildcard(client *fasthttp.Client, baseURL string, Placeholder string, userAgents ...string) (*Wildcard, error) {
+func DetectWildcard(client *transport.Client, baseURL string, Placeholder string, userAgents ...string) (*Wildcard, error) {
 	var status int
 	var lenght int
 	const tries = 3
@@ -36,23 +35,19 @@ func DetectWildcard(client *fasthttp.Client, baseURL string, Placeholder string,
 			fullURL = baseURL + "/" + random.RandomString(12)
 		}
 
-		request := fasthttp.AcquireRequest()
-		response := fasthttp.AcquireResponse()
-		request.SetRequestURI(fullURL)
-		request.Header.SetUserAgent(random.RandChoice(userAgents))
-		request.Header.SetMethod("GET")
-
-		debug.Request("wildcard", request)
-		err := client.Do(request, response)
-		fasthttp.ReleaseRequest(request)
+		response, err := client.Do(&transport.RequestOptions{
+			URL:        fullURL,
+			Method:     transport.MethodGET,
+			MethodMode: transport.MethodModeFixed,
+			UserAgent:  random.RandChoice(userAgents),
+		})
 		if err != nil {
 			debug.Error("wildcard", err)
-			fasthttp.ReleaseResponse(response)
 			return nil, err
 		}
-		debug.Response("wildcard", response)
-		bodyLen := len(response.Body())
-		resStatusCode := response.StatusCode()
+		debug.Printf("wildcard response status=%d body=%d", response.StatusCode, response.Lenght)
+		bodyLen := response.Lenght
+		resStatusCode := response.StatusCode
 		if index == 0 {
 			status = resStatusCode
 			lenght = bodyLen
@@ -60,18 +55,15 @@ func DetectWildcard(client *fasthttp.Client, baseURL string, Placeholder string,
 		} else {
 			if status == 404 {
 				debug.Printf("wildcard inactive because first status is 404")
-				fasthttp.ReleaseResponse(response)
 				return &Wildcard{Active: false}, nil
 			}
 			if status != resStatusCode || lenght != bodyLen {
 				debug.Printf("wildcard inactive mismatch index=%d status=%d length=%d expected_status=%d expected_length=%d",
 					index, resStatusCode, bodyLen, status, lenght)
-				fasthttp.ReleaseResponse(response)
 				return &Wildcard{Active: false}, nil
 			}
 		}
 		lenghts = append(lenghts, bodyLen)
-		fasthttp.ReleaseResponse(response)
 
 	}
 	min, max := maths.MinMax(lenghts...)
