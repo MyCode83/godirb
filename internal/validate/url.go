@@ -3,15 +3,13 @@ package validate
 import (
 	"fmt"
 	"github.com/MyCode83/godirb/internal/debug"
-	"github.com/valyala/fasthttp"
+	"github.com/MyCode83/godirb/internal/transport"
 	parseurl "net/url"
 	"os"
-	"strings"
 )
 
-func ValidateUrl(raw string, client *fasthttp.Client, method string, userAgent string) bool {
+func ValidateUrl(raw string, client *transport.Client, method transport.Method, methodMode transport.MethodMode, userAgent string) bool {
 	debug.Printf("validating url=%q method=%q user_agent=%q", raw, method, userAgent)
-	methodSwitch := "GET"
 	u, err := parseurl.Parse(raw)
 	if err != nil {
 		debug.Error("validate url parse", err)
@@ -28,32 +26,20 @@ func ValidateUrl(raw string, client *fasthttp.Client, method string, userAgent s
 		fmt.Fprintf(os.Stderr, "\n[X] Err: Empty host '%s'. Cheack the URL\n", u.Hostname())
 		return false
 	}
-	request := fasthttp.AcquireRequest()
-	response := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseRequest(request)
-	defer fasthttp.ReleaseResponse(response)
-	request.SetRequestURI(raw)
-	request.Header.SetUserAgent(userAgent)
-	switch method {
-	case "GET", "HEAD", "get", "head":
-		request.Header.SetMethod(strings.ToUpper(method))
-	case "SWITCH", "switch", "swich":
-		if methodSwitch == "GET" {
-			methodSwitch = "HEAD"
-		} else {
-			methodSwitch = "GET"
-		}
-		request.Header.SetMethod(methodSwitch)
+	request := transport.RequestOptions{
+		URL:        raw,
+		Method:     method,
+		MethodMode: methodMode,
+		UserAgent:  userAgent,
 	}
 	fails := 0
 	for range 5 {
-		debug.Request("validate-url", request)
-		err := client.Do(request, response)
+		response, err := client.Do(&request)
 		if err != nil {
 			debug.Error("validate-url", err)
 			fails++
 		} else {
-			debug.Response("validate-url", response)
+			debug.Printf("validate-url response status=%d body=%d", response.StatusCode, response.Lenght)
 			debug.Printf("validate url success fails_before_success=%d", fails)
 			return true
 		}

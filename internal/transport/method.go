@@ -14,8 +14,8 @@ const (
 	MethodModeSwitch MethodMode = "SWITCH"
 )
 const (
-	MethodGET    Method = "GET"
-	MethodHEAD   Method = "HEAD"
+	MethodGET  Method = "GET"
+	MethodHEAD Method = "HEAD"
 )
 
 var ErrInvalidMethod = errors.New("invalid method")
@@ -39,7 +39,7 @@ func ParseMethod(raw string) (Method, MethodMode, error) {
 		return MethodGET, MethodModeFixed, nil
 	case "HEAD":
 		return MethodHEAD, MethodModeFixed, nil
-	case "SWITCH":
+	case "SWITCH", "SWICH":
 		return MethodHEAD, MethodModeSwitch, nil
 	default:
 		return "", "", ErrInvalidMethod

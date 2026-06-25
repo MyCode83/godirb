@@ -6,11 +6,10 @@ import (
 	"time"
 
 	"github.com/MyCode83/godirb/internal/debug"
+	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/pkg/random"
 	"slices"
 	"strings"
-
-	"github.com/valyala/fasthttp"
 )
 
 const prefix = "+"
@@ -53,101 +52,57 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 				default:
 
 				}
-				methodSwitch := "GET"
-				request := fasthttp.AcquireRequest()
-				response := fasthttp.AcquireResponse()
-				switch c.Method {
-				case "GET", "HEAD", "get", "head":
-					request.Header.SetMethod(strings.ToUpper(c.Method))
-				case "SWITCH", "switch", "swich":
-					if methodSwitch == "GET" {
-						methodSwitch = "HEAD"
-					} else {
-						methodSwitch = "GET"
-					}
-					request.Header.SetMethod(methodSwitch)
-				}
-
 				urlParts := strings.Split(baseURL, c.Placeholder)
 				fullURL := urlParts[0] + word + urlParts[1]
-
-				request.SetRequestURI(fullURL)
-
-				request.Header.SetUserAgent(random.RandChoice(c.UserAgents))
+				headers := c.Header
 				if c.AuthHeader != "" {
-					request.Header.Set("Authorization", c.AuthHeader)
+					headers = append(append([]string{}, headers...), "Authorization: "+c.AuthHeader)
+				}
+				request := transport.RequestOptions{
+					URL:        fullURL,
+					Method:     c.Method,
+					MethodMode: c.MethodMode,
+					UserAgent:  random.RandChoice(c.UserAgents),
+					Headers:    headers,
 				}
 
-				debug.Request("fuzz", request)
-				err := c.Client.Do(request, response)
+				response, err := c.Client.Do(&request)
 				if err != nil {
 					debug.Error("fuzz", err)
-					fasthttp.ReleaseRequest(request)
-					fasthttp.ReleaseResponse(response)
 					return
 				}
-				debug.Response("fuzz", response)
-				status := response.StatusCode()
-				lenght := len(response.Body())
+				debug.Printf("fuzz response status=%d body=%d", response.StatusCode, response.Lenght)
+				status := response.StatusCode
+				lenght := response.Lenght
 
 				if !c.Baseline.IsInteresting(status, lenght, c.Baseline.Tolerance) {
 					debug.Printf("fuzz filtered baseline url=%s status=%d length=%d baseline_status=%d baseline_length=%d tolerance=%d",
 						fullURL, status, lenght, c.Baseline.Status, c.Baseline.Lenght, c.Baseline.Tolerance)
-					fasthttp.ReleaseRequest(request)
-					fasthttp.ReleaseResponse(response)
 					return
 				}
 
-				fasthttp.ReleaseRequest(request)
-				fasthttp.ReleaseResponse(response)
 				if len(c.Exts) > 0 {
 					for _, ext := range c.Exts {
 						urlWithExt := urlParts[0] + word + "." + ext + urlParts[1]
-						request2 := fasthttp.AcquireRequest()
-						response2 := fasthttp.AcquireResponse()
-						switch c.Method {
-						case "GET", "HEAD", "get", "head":
-							request2.Header.SetMethod(strings.ToUpper(c.Method))
-						case "SWITCH", "switch", "swich":
-							if methodSwitch == "GET" {
-								methodSwitch = "HEAD"
-							} else {
-								methodSwitch = "GET"
-							}
-							request2.Header.SetMethod(strings.ToUpper(methodSwitch))
-
-						}
-						request2.SetRequestURI(urlWithExt)
-						request2.Header.SetUserAgent(random.RandChoice(c.UserAgents))
-						if c.AuthHeader != "" {
-							request2.Header.Set("Authorization", c.AuthHeader)
-						}
-						debug.Request("fuzz-ext", request2)
-						err2 := c.Client.Do(request2, response2)
+						request.URL = urlWithExt
+						request.UserAgent = random.RandChoice(c.UserAgents)
+						response2, err2 := c.Client.Do(&request)
 
 						if err2 != nil {
 							debug.Error("fuzz-ext", err2)
-							fasthttp.ReleaseRequest(request2)
-							fasthttp.ReleaseResponse(response2)
 							continue
 						}
-						debug.Response("fuzz-ext", response2)
-						statusCode2 := response2.StatusCode()
-						lenght2 := len(response2.Body())
+						debug.Printf("fuzz-ext response status=%d body=%d", response2.StatusCode, response2.Lenght)
+						statusCode2 := response2.StatusCode
+						lenght2 := response2.Lenght
 						if !c.Baseline.IsInteresting(statusCode2, lenght2, c.Baseline.Tolerance) {
 							debug.Printf("fuzz-ext filtered baseline url=%s status=%d length=%d", urlWithExt, statusCode2, lenght2)
-							fasthttp.ReleaseRequest(request2)
-							fasthttp.ReleaseResponse(response2)
 							continue
 						}
 						if slices.Contains(c.IgnoreCodes, statusCode2) {
 							debug.Printf("fuzz-ext ignored url=%s status=%d", urlWithExt, statusCode2)
-							fasthttp.ReleaseRequest(request2)
-							fasthttp.ReleaseResponse(response2)
 							continue
 						}
-						fasthttp.ReleaseRequest(request2)
-						fasthttp.ReleaseResponse(response2)
 
 						results <- Result{
 							Prefix: prefix,

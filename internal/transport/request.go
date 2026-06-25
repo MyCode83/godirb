@@ -10,7 +10,7 @@ type RequestOptions struct {
 	MethodMode MethodMode
 
 	UserAgent string
-	Headers []string
+	Headers   []string
 }
 
 func (opts *RequestOptions) methodForRequest() Method {
