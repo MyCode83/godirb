@@ -1,13 +1,21 @@
 package transport
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 type Method string
 
+type MethodMode string
+
+const (
+	MethodModeFixed  MethodMode = "FIXED"
+	MethodModeSwitch MethodMode = "SWITCH"
+)
 const (
 	MethodGET    Method = "GET"
 	MethodHEAD   Method = "HEAD"
-	MethodSwitch Method = "SWITCH"
 )
 
 var ErrInvalidMethod = errors.New("invalid method")
@@ -18,20 +26,24 @@ func (m Method) String() string {
 
 func (m Method) Valid() bool {
 	switch m {
-	case MethodGET, MethodHEAD, MethodSwitch:
+	case MethodGET, MethodHEAD:
 		return true
 	default:
 		return false
 	}
 }
 
-func ParseMethod(raw string) (Method, error) {
-	m := Method(raw)
-
-	if !m.Valid() {
-		return "", ErrInvalidMethod
+func ParseMethod(raw string) (Method, MethodMode, error) {
+	switch strings.ToUpper(strings.TrimSpace(raw)) {
+	case "GET":
+		return MethodGET, MethodModeFixed, nil
+	case "HEAD":
+		return MethodHEAD, MethodModeFixed, nil
+	case "SWITCH":
+		return MethodHEAD, MethodModeSwitch, nil
+	default:
+		return "", "", ErrInvalidMethod
 	}
-	return m, nil
 }
 
 func (m *Method) Toggle() {

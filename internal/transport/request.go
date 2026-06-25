@@ -1,8 +1,9 @@
 package transport
 
-type Request struct {
+type RequestOptions struct {
 	URL    string
 	Method Method
+	MethodMode MethodMode
 
-	Headers []byte
+	Headers map[string]string
 }
