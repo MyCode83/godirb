@@ -38,7 +38,7 @@ func (c *Client) Do(opts RequestOptions) (Response, error) {
 		return Response{}, err
 	}
 
-	body := resp.Body()
+	body := append([]byte(nil), resp.Body()...)
 	lenght := len(body)
 
 	return Response{

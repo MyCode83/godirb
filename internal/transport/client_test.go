@@ -59,3 +59,37 @@ func TestDoSendsRequestWithHeaders(t *testing.T) {
 		t.Fatalf("status = %d, want %d", resp.StatusCode, fasthttp.StatusTeapot)
 	}
 }
+
+func TestDoCopiesResponseBody(t *testing.T) {
+	bodies := []string{"first", "second-body"}
+	requests := 0
+	client, url, cleanup := newTestClient(t, func(ctx *fasthttp.RequestCtx) {
+		if requests >= len(bodies) {
+			t.Fatalf("unexpected request %d", requests+1)
+		}
+
+		ctx.SetBodyString(bodies[requests])
+		requests++
+	})
+	defer cleanup()
+
+	first, err := client.Do(RequestOptions{
+		URL:    url,
+		Method: MethodGET,
+	})
+	if err != nil {
+		t.Fatalf("first Do returned error: %v", err)
+	}
+
+	_, err = client.Do(RequestOptions{
+		URL:    url,
+		Method: MethodGET,
+	})
+	if err != nil {
+		t.Fatalf("second Do returned error: %v", err)
+	}
+
+	if got := string(first.Body); got != "first" {
+		t.Fatalf("first body after second request = %q, want %q", got, "first")
+	}
+}
