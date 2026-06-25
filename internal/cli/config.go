@@ -26,7 +26,7 @@ var (
 	mode         core.Mode = core.ModeDir
 )
 
-const Version = "1.0.2"
+const Version = "1.1.2"
 
 var PreUserAgents = []string{
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
