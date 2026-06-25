@@ -1,9 +1,15 @@
 package transport
 
-import "github.com/valyala/fasthttp"
+import (
+	"sync"
+
+	"github.com/valyala/fasthttp"
+)
 
 type Client struct {
-	raw *fasthttp.Client
+	raw          *fasthttp.Client
+	switchMu     sync.Mutex
+	switchMethod Method
 }
 
 func New(raw *fasthttp.Client) *Client {
@@ -21,10 +27,8 @@ func (c *Client) Do(opts RequestOptions) (Response, error) {
 
 	req.SetRequestURI(opts.URL)
 
-	if opts.MethodMode == MethodModeSwitch {
-		opts.Method.Toggle()
-	}
-	req.Header.SetMethod(opts.Method.String())
+	method := c.methodFor(opts)
+	req.Header.SetMethod(method.String())
 
 	if opts.Headers != nil {
 		err := applyHeaders(req, opts.Headers)
@@ -43,7 +47,7 @@ func (c *Client) Do(opts RequestOptions) (Response, error) {
 
 	return Response{
 		URL:           opts.URL,
-		Method:        opts.Method,
+		Method:        method,
 		StatusCode:    resp.StatusCode(),
 		ContentLenght: resp.Header.ContentLength(),
 		Lenght:        lenght,
@@ -52,4 +56,20 @@ func (c *Client) Do(opts RequestOptions) (Response, error) {
 
 		Body: body,
 	}, err
+}
+
+func (c *Client) methodFor(opts RequestOptions) Method {
+	if opts.MethodMode != MethodModeSwitch {
+		return opts.Method
+	}
+
+	c.switchMu.Lock()
+	defer c.switchMu.Unlock()
+
+	if c.switchMethod == "" {
+		c.switchMethod = opts.Method
+	}
+	c.switchMethod.Toggle()
+
+	return c.switchMethod
 }

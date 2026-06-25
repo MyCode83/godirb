@@ -93,3 +93,37 @@ func TestDoCopiesResponseBody(t *testing.T) {
 		t.Fatalf("first body after second request = %q, want %q", got, "first")
 	}
 }
+
+func TestDoSwitchModeRotatesMethods(t *testing.T) {
+	var got []string
+	client, url, cleanup := newTestClient(t, func(ctx *fasthttp.RequestCtx) {
+		got = append(got, string(ctx.Method()))
+	})
+	defer cleanup()
+
+	method, mode, err := ParseMethod("SWITCH")
+	if err != nil {
+		t.Fatalf("ParseMethod returned error: %v", err)
+	}
+
+	opts := RequestOptions{
+		URL:        url,
+		Method:     method,
+		MethodMode: mode,
+	}
+	for range 3 {
+		if _, err := client.Do(opts); err != nil {
+			t.Fatalf("Do returned error: %v", err)
+		}
+	}
+
+	want := []string{"GET", "HEAD", "GET"}
+	if len(got) != len(want) {
+		t.Fatalf("got %d requests, want %d", len(got), len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("method %d = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
