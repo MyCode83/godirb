@@ -27,9 +27,8 @@ func (c *Client) Do(opts RequestOptions) (Response, error) {
 	req.Header.SetMethod(opts.Method.String())
 
 	if opts.Headers != nil {
-		for key, value := range opts.Headers {
-			req.Header.Set(key, value)
-		}
+		err := applyHeaders(req, opts.Headers)
+		return Response{}, err
 	}
 
 	err := c.raw.Do(req, resp)

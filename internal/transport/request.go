@@ -5,5 +5,5 @@ type RequestOptions struct {
 	Method Method
 	MethodMode MethodMode
 
-	Headers map[string]string
+	Headers []string
 }
