@@ -53,12 +53,6 @@ var (
 	mode         core.Mode = core.ModeDir
 )
 
-const version = "1.0.2"
-
-var preUserAgents = []string{
-	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-}
-
 // others
 var (
 	auth          string
@@ -91,6 +85,10 @@ func main() {
 		// log.Println(": context canceled")
 	}()
 	cfg, wd := cli.ParseFlags()
+	if cfg.Version {
+		fmt.Println(cli.Version)
+		return
+	}
 	debug.Set(cfg.Debug)
 	debug.Printf("parsed flags url=%q wordlist=%q threads=%d timeout=%q delay=%q method=%q recursive=%t quiet=%t json=%t csv=%t output=%q",
 		cfg.URL, wd.Wordlist, cfg.Threads, cfg.RawTimeout, cfg.RawDelay, cfg.Method, cfg.Recursive, cfg.Quiet, cfg.JSON, cfg.CSV, cfg.Output)
