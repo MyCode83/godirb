@@ -47,7 +47,7 @@ func TestDoSendsRequestWithHeaders(t *testing.T) {
 	})
 	defer cleanup()
 
-	resp, err := client.Do(RequestOptions{
+	resp, err := client.Do(&RequestOptions{
 		URL:     url,
 		Method:  MethodGET,
 		Headers: []string{"X-Test: ok"},
@@ -73,7 +73,7 @@ func TestDoCopiesResponseBody(t *testing.T) {
 	})
 	defer cleanup()
 
-	first, err := client.Do(RequestOptions{
+	first, err := client.Do(&RequestOptions{
 		URL:    url,
 		Method: MethodGET,
 	})
@@ -81,7 +81,7 @@ func TestDoCopiesResponseBody(t *testing.T) {
 		t.Fatalf("first Do returned error: %v", err)
 	}
 
-	_, err = client.Do(RequestOptions{
+	_, err = client.Do(&RequestOptions{
 		URL:    url,
 		Method: MethodGET,
 	})
@@ -112,7 +112,7 @@ func TestDoSwitchModeRotatesMethods(t *testing.T) {
 		MethodMode: mode,
 	}
 	for range 3 {
-		if _, err := client.Do(opts); err != nil {
+		if _, err := client.Do(&opts); err != nil {
 			t.Fatalf("Do returned error: %v", err)
 		}
 	}
@@ -121,6 +121,39 @@ func TestDoSwitchModeRotatesMethods(t *testing.T) {
 	if len(got) != len(want) {
 		t.Fatalf("got %d requests, want %d", len(got), len(want))
 	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("method %d = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestDoSwitchModeKeepsStateInRequestOptions(t *testing.T) {
+	var got []string
+	client, url, cleanup := newTestClient(t, func(ctx *fasthttp.RequestCtx) {
+		got = append(got, string(ctx.Method()))
+	})
+	defer cleanup()
+
+	optsA := RequestOptions{
+		URL:        url,
+		Method:     MethodHEAD,
+		MethodMode: MethodModeSwitch,
+	}
+	optsB := RequestOptions{
+		URL:        url,
+		Method:     MethodGET,
+		MethodMode: MethodModeSwitch,
+	}
+
+	if _, err := client.Do(&optsA); err != nil {
+		t.Fatalf("Do optsA returned error: %v", err)
+	}
+	if _, err := client.Do(&optsB); err != nil {
+		t.Fatalf("Do optsB returned error: %v", err)
+	}
+
+	want := []string{"GET", "HEAD"}
 	for i := range want {
 		if got[i] != want[i] {
 			t.Fatalf("method %d = %q, want %q", i, got[i], want[i])
