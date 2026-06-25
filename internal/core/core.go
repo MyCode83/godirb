@@ -62,4 +62,18 @@ type Core struct {
 	// State
 	VisitedDirs  map[string]bool
 	VisitedMutex sync.Mutex
+	MethodMutex  sync.Mutex
+}
+
+func (c *Core) nextRequestMethod() transport.Method {
+	if c.MethodMode != transport.MethodModeSwitch {
+		return c.Method
+	}
+
+	c.MethodMutex.Lock()
+	defer c.MethodMutex.Unlock()
+
+	c.Method.Toggle()
+
+	return c.Method
 }

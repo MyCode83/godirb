@@ -60,8 +60,8 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 				}
 				request := transport.RequestOptions{
 					URL:        fullURL,
-					Method:     c.Method,
-					MethodMode: c.MethodMode,
+					Method:     c.nextRequestMethod(),
+					MethodMode: transport.MethodModeFixed,
 					UserAgent:  random.RandChoice(c.UserAgents),
 					Headers:    headers,
 				}
@@ -85,6 +85,7 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 					for _, ext := range c.Exts {
 						urlWithExt := urlParts[0] + word + "." + ext + urlParts[1]
 						request.URL = urlWithExt
+						request.Method = c.nextRequestMethod()
 						request.UserAgent = random.RandChoice(c.UserAgents)
 						response2, err2 := c.Client.Do(&request)
 

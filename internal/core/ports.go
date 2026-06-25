@@ -55,8 +55,8 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 				}
 				request := transport.RequestOptions{
 					URL:        fullURL,
-					Method:     c.Method,
-					MethodMode: c.MethodMode,
+					Method:     c.nextRequestMethod(),
+					MethodMode: transport.MethodModeFixed,
 					UserAgent:  random.RandChoice(c.UserAgents),
 					Headers:    headers,
 				}

@@ -75,8 +75,8 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					}
 					request := transport.RequestOptions{
 						URL:        fullURL,
-						Method:     c.Method,
-						MethodMode: c.MethodMode,
+						Method:     c.nextRequestMethod(),
+						MethodMode: transport.MethodModeFixed,
 						UserAgent:  random.RandChoice(c.UserAgents),
 						Headers:    headers,
 					}
@@ -102,6 +102,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 							// Reset
 							urlWithExt := fullURL + "." + ext
 							request.URL = urlWithExt
+							request.Method = c.nextRequestMethod()
 							request.UserAgent = random.RandChoice(c.UserAgents)
 							response2, err2 := c.Client.Do(&request)
 
@@ -168,7 +169,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					pathOnly := strings.TrimPrefix(fullURL, baseURL)
 
 					debug.Printf("dir detention url=%s path=%s", fullURL, pathOnly)
-					DirDetention, err := detention.Detect(c.Client, baseURL, pathOnly, c.Method, c.MethodMode)
+					DirDetention, err := detention.Detect(c.Client, baseURL, pathOnly, c.nextRequestMethod(), transport.MethodModeFixed)
 
 					if err == nil {
 
