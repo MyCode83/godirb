@@ -28,7 +28,9 @@ func (c *Client) Do(opts RequestOptions) (Response, error) {
 
 	if opts.Headers != nil {
 		err := applyHeaders(req, opts.Headers)
-		return Response{}, err
+		if err != nil {
+			return Response{}, err
+		}
 	}
 
 	err := c.raw.Do(req, resp)
@@ -40,14 +42,14 @@ func (c *Client) Do(opts RequestOptions) (Response, error) {
 	lenght := len(body)
 
 	return Response{
-		URL: opts.URL,
-		Method: opts.Method,
-		StatusCode: resp.StatusCode(),
+		URL:           opts.URL,
+		Method:        opts.Method,
+		StatusCode:    resp.StatusCode(),
 		ContentLenght: resp.Header.ContentLength(),
-		Lenght: lenght,
-		ContentType: string(resp.Header.ContentType()),
-		Location: string(resp.Header.Peek("Location")),
+		Lenght:        lenght,
+		ContentType:   string(resp.Header.ContentType()),
+		Location:      string(resp.Header.Peek("Location")),
 
 		Body: body,
-	}, nil
+	}, err
 }
