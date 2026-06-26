@@ -169,7 +169,13 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					pathOnly := strings.TrimPrefix(fullURL, baseURL)
 
 					debug.Printf("dir detention url=%s path=%s", fullURL, pathOnly)
-					DirDetention, err := detention.Detect(c.Client, baseURL, pathOnly, c.nextRequestMethod(), transport.MethodModeFixed)
+					DirDetention, err := detention.Detect(c.Client, transport.RequestOptions{
+						URL:        fullURL,
+						Method:     transport.MethodHEAD,
+						MethodMode: transport.MethodModeFixed,
+						UserAgent:  random.RandChoice(c.UserAgents),
+						Headers:    headers,
+					})
 
 					if err == nil {
 
