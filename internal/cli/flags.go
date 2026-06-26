@@ -21,11 +21,12 @@ func ParseFlags() (Config, wordlist.Wordlist) {
 	pflag.StringSliceVarP(&cfg.Exts, "ext", "x", nil, "Comma-separated list of file extensions to append")
 	pflag.StringVarP(&cfg.RawTimeout, "timeout", "T", "5s", "Request timeout in seconds. Default: 5")
 	pflag.StringVarP(&cfg.RawDelay, "delay", "d", "0", "Delay between requests in milliseconds. Default: 0")
-	pflag.StringSliceVarP(&cfg.UserAgent, "user-agent", "a", preUserAgents, "Comma-separated list of User-Agents to rotate")
+	pflag.StringSliceVarP(&cfg.UserAgent, "user-agent", "a", PreUserAgents, "Comma-separated list of User-Agents to rotate")
 	// bools
 	pflag.BoolVarP(&cfg.NoColor, "no-color", "n", false, "Disable colored output") // no color
 	pflag.BoolVarP(&cfg.Recursive, "recursive", "r", false, "Enable recursive directory enumeration")
 	pflag.BoolVar(&cfg.Debug, "debug", false, "Enable verbose debug output")
+	pflag.BoolVar(&cfg.Version, "version", false, "Print version and exit")
 	// forces
 	pflag.BoolVarP(&cfg.ForceHead, "force-head", "", false, "Skip HEAD/SWITCH wildcard confirmation")
 	pflag.BoolVarP(&cfg.ForceThreads, "force-threads", "", false, "Skip high thread-count confirmation")

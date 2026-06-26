@@ -18,7 +18,6 @@ import (
 
 	// Third-libs
 	"github.com/spf13/pflag"
-	"github.com/valyala/fasthttp"
 
 	// Godirb-lib
 	"github.com/MyCode83/godirb/internal/assemble"
@@ -28,6 +27,7 @@ import (
 	"github.com/MyCode83/godirb/internal/core" // core
 	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/output"
+	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/internal/validate"
 
 	"github.com/MyCode83/godirb/internal/baseline"
@@ -47,18 +47,11 @@ const banner string = (`
 `)
 
 var (
-	client       *fasthttp.Client
 	wg           sync.WaitGroup
 	tasksWG      sync.WaitGroup
 	visitedMutex sync.Mutex
 	mode         core.Mode = core.ModeDir
 )
-
-const version = "1.0.2"
-
-var preUserAgents = []string{
-	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-}
 
 // others
 var (
@@ -92,6 +85,10 @@ func main() {
 		// log.Println(": context canceled")
 	}()
 	cfg, wd := cli.ParseFlags()
+	if cfg.Version {
+		fmt.Println(cli.Version)
+		return
+	}
 	debug.Set(cfg.Debug)
 	debug.Printf("parsed flags url=%q wordlist=%q threads=%d timeout=%q delay=%q method=%q recursive=%t quiet=%t json=%t csv=%t output=%q",
 		cfg.URL, wd.Wordlist, cfg.Threads, cfg.RawTimeout, cfg.RawDelay, cfg.Method, cfg.Recursive, cfg.Quiet, cfg.JSON, cfg.CSV, cfg.Output)
@@ -103,8 +100,12 @@ func main() {
 
 	// wd = instance
 	// wl = wordlist slice
-	client = assemble.BuildProxyAndClient(cfg.Proxy, cfg.Timeout, cfg.Insecure) // Fasthttp-Client
-	debug.Printf("http client ready proxy=%t timeout=%s insecure=%t", cfg.Proxy != "", cfg.Timeout, cfg.Insecure)
+	method, methodMode, err := transport.ParseMethod(cfg.Method)
+	if err != nil {
+		debug.Error("method parse", err)
+		fmt.Fprintf(os.Stderr, "[X] Error: invalid method '%s'\n", cfg.Method)
+		os.Exit(2)
+	}
 	switch mode {
 	case core.ModeFuzz:
 		if !pflag.Lookup("placeholder").Changed {
@@ -128,7 +129,12 @@ func main() {
 			fmt.Fprintf(os.Stderr, "[!] Very high timeout (%s). Scan will be very slow.\nCTRL + C will take a while (up to 30s).\n", cfg.Timeout)
 		}
 	case core.ModeDir:
-		if !validate.ValidateUrl(cfg.BaseURL, client, cfg.Method, random.RandChoice(cfg.UserAgent)) {
+	}
+	rawClient := assemble.BuildProxyAndClient(cfg.Proxy, cfg.Timeout, cfg.Insecure)
+	client := transport.New(rawClient)
+	debug.Printf("http client ready proxy=%t timeout=%s insecure=%t", cfg.Proxy != "", cfg.Timeout, cfg.Insecure)
+	if mode == core.ModeDir {
+		if !validate.ValidateUrl(cfg.BaseURL, client, method, methodMode, random.RandChoice(cfg.UserAgent)) {
 			os.Exit(1)
 		}
 	}
@@ -192,7 +198,8 @@ func main() {
 
 		// HTTP
 		Client:     client,
-		Method:     cfg.Method,
+		Method:     method,
+		MethodMode: methodMode,
 		UserAgents: cfg.UserAgent,
 		AuthHeader: auth,
 		Header:     cfg.Header,
@@ -241,6 +248,10 @@ func main() {
 
 				if confirmation.WildcardConfirmation() {
 					cfg.Method = "GET"
+					method = transport.MethodGET
+					methodMode = transport.MethodModeFixed
+					engine.Method = method
+					engine.MethodMode = methodMode
 				}
 			}
 		}
