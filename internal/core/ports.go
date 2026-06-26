@@ -6,12 +6,11 @@ import (
 	// "github.com/MyCode83/godirb/internal/assemble"
 
 	"github.com/MyCode83/godirb/internal/debug"
+	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/pkg/random"
 	"slices"
 	"strings"
 	"time"
-
-	"github.com/valyala/fasthttp"
 )
 
 func looksLikeService(err error) bool {
@@ -47,40 +46,26 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 			go func(word string) {
 				defer c.WG.Done()
 				defer func() { <-c.Limiter }()
-				methodSwitch := "GET"
-				request := fasthttp.AcquireRequest()
-				response := fasthttp.AcquireResponse()
-
-				defer fasthttp.ReleaseRequest(request)
-				defer fasthttp.ReleaseResponse(response)
-
-				switch c.Method {
-				case "GET", "HEAD", "get", "head":
-					request.Header.SetMethod(strings.ToUpper(c.Method))
-				case "SWITCH", "switch", "swich":
-					if methodSwitch == "GET" {
-						methodSwitch = "HEAD"
-					} else {
-						methodSwitch = "GET"
-					}
-					request.Header.SetMethod(methodSwitch)
-				}
 
 				urlParts := strings.Split(baseUrl, c.Placeholder)
 				fullURL := urlParts[0] + word + urlParts[1]
-				request.SetRequestURI(fullURL)
-
-				request.Header.SetUserAgent(random.RandChoice(c.UserAgents))
+				headers := c.Header
 				if c.AuthHeader != "" {
-					request.Header.Set("Authorization", c.AuthHeader)
+					headers = append(append([]string{}, headers...), "Authorization: "+c.AuthHeader)
 				}
-				debug.Request("ports", request)
-				err := c.Client.DoTimeout(request, response, c.Timeout)
+				request := transport.RequestOptions{
+					URL:        fullURL,
+					Method:     c.nextRequestMethod(),
+					MethodMode: transport.MethodModeFixed,
+					UserAgent:  random.RandChoice(c.UserAgents),
+					Headers:    headers,
+				}
+				response, err := c.Client.Do(&request)
 				if c.Ctx.Err() != nil {
 					debug.Printf("ports worker canceled url=%s", fullURL)
 					return
 				}
-				status := response.StatusCode()
+				status := response.StatusCode
 				if err != nil {
 					debug.Error("ports", err)
 					if looksLikeService(err) {
@@ -93,12 +78,10 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 					}
 					return
 				}
-				debug.Response("ports", response)
+				debug.Printf("ports response status=%d body=%d", response.StatusCode, response.Lenght)
 
-				lenght := len(response.Body())
+				lenght := response.Lenght
 
-				request.Reset()
-				response.Reset()
 				if slices.Contains(c.IgnoreCodes, status) {
 					debug.Printf("ports ignored url=%s status=%d", fullURL, status)
 					return

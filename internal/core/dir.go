@@ -6,14 +6,13 @@ import (
 
 	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/detention"
+	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/internal/wildcard"
 
 	"github.com/MyCode83/godirb/pkg/random"
 	"os"
 	"slices"
 	"strings"
-
-	"github.com/valyala/fasthttp"
 )
 
 func (c *Core) RunDir(baseURL string) <-chan Result {
@@ -59,24 +58,6 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 				go func(word string) {
 					dirPrefix := ""
 
-					// Request/Response
-					request := fasthttp.AcquireRequest()
-					response := fasthttp.AcquireResponse()
-					// Release
-					defer fasthttp.ReleaseRequest(request)
-					defer fasthttp.ReleaseResponse(response)
-
-					// Request/Response of extensions
-					request2 := fasthttp.AcquireRequest()
-					response2 := fasthttp.AcquireResponse()
-					// Release
-					defer fasthttp.ReleaseRequest(request2)
-					defer fasthttp.ReleaseResponse(response2)
-
-					// Reset Headers, Methods... without release
-					request.Reset()
-					response.Reset()
-
 					defer c.WG.Done()
 
 					defer func() { <-c.Limiter }()
@@ -87,43 +68,27 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					default:
 
 					}
-					methodSwitch := "GET"
-
-					switch c.Method {
-					case "GET", "HEAD", "get", "head":
-						request.Header.SetMethod(strings.ToUpper(c.Method))
-					case "SWITCH", "switch", "swich":
-						if methodSwitch == "GET" {
-							methodSwitch = "HEAD"
-						} else {
-							methodSwitch = "GET"
-						}
-						request.Header.SetMethod(methodSwitch)
-					}
-
 					fullURL := fmt.Sprintf("%s/%s", dir, word)
-					request.SetRequestURI(fullURL)
-
-					request.Header.SetUserAgent(random.RandChoice(c.UserAgents))
+					headers := c.Header
 					if c.AuthHeader != "" {
-						request.Header.Set("Authorization", c.AuthHeader)
+						headers = append(append([]string{}, headers...), "Authorization: "+c.AuthHeader)
 					}
-					if c.Header != nil {
-						err := applyHeaders(request, c.Header)
-						if err != nil {
-							fmt.Fprintln(os.Stderr, err)
-						}
+					request := transport.RequestOptions{
+						URL:        fullURL,
+						Method:     c.nextRequestMethod(),
+						MethodMode: transport.MethodModeFixed,
+						UserAgent:  random.RandChoice(c.UserAgents),
+						Headers:    headers,
 					}
 
-					debug.Request("dir", request)
-					err := c.Client.Do(request, response)
+					response, err := c.Client.Do(&request)
 					if err != nil {
 						debug.Error("dir", err)
 						return
 					}
-					debug.Response("dir", response)
-					status := response.StatusCode()
-					lenght := len(response.Body())
+					debug.Printf("dir response status=%d body=%d", response.StatusCode, response.Lenght)
+					status := response.StatusCode
+					lenght := response.Lenght
 					if c.Wildcard.Active {
 						if status == c.Wildcard.Status && wildcard.IsSimilarSize(lenght, c.Wildcard.Lenght, c.Wildcard.Tolerance) {
 							debug.Printf("dir filtered wildcard url=%s status=%d length=%d wildcard_status=%d wildcard_length=%d tolerance=%d",
@@ -135,40 +100,19 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					if len(c.Exts) > 0 {
 						for _, ext := range c.Exts {
 							// Reset
-							request2.Reset()
-							response2.Reset()
-
 							urlWithExt := fullURL + "." + ext
-
-							switch c.Method {
-							case "GET", "HEAD", "get", "head":
-								request2.Header.SetMethod(strings.ToUpper(c.Method))
-							case "SWITCH", "switch", "swich":
-								if methodSwitch == "GET" {
-									methodSwitch = "HEAD"
-								} else {
-									methodSwitch = "GET"
-								}
-								request2.Header.SetMethod(strings.ToUpper(methodSwitch))
-
-							}
-							request2.SetRequestURI(urlWithExt)
-							request2.Header.SetUserAgent(random.RandChoice(c.UserAgents))
-							if c.AuthHeader != "" {
-								request2.Header.Set("Authorization", c.AuthHeader)
-							}
-							debug.Request("dir-ext", request2)
-							err2 := c.Client.Do(request2, response2)
+							request.URL = urlWithExt
+							request.Method = c.nextRequestMethod()
+							request.UserAgent = random.RandChoice(c.UserAgents)
+							response2, err2 := c.Client.Do(&request)
 
 							if err2 != nil {
 								debug.Error("dir-ext", err2)
-								fasthttp.ReleaseRequest(request2)
-								fasthttp.ReleaseResponse(response2)
 								continue
 							}
-							debug.Response("dir-ext", response2)
-							statusCode2 := response2.StatusCode()
-							lenght2 := len(response2.Body())
+							debug.Printf("dir-ext response status=%d body=%d", response2.StatusCode, response2.Lenght)
+							statusCode2 := response2.StatusCode
+							lenght2 := response2.Lenght
 							if c.Wildcard.Active && statusCode2 == c.Wildcard.Status && wildcard.IsSimilarSize(lenght2, c.Wildcard.Lenght, c.Wildcard.Tolerance) {
 								debug.Printf("dir-ext filtered wildcard url=%s status=%d length=%d", urlWithExt, statusCode2, lenght2)
 
@@ -225,7 +169,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					pathOnly := strings.TrimPrefix(fullURL, baseURL)
 
 					debug.Printf("dir detention url=%s path=%s", fullURL, pathOnly)
-					DirDetention, err := detention.Detect(c.Client, baseURL, pathOnly, c.Method)
+					DirDetention, err := detention.Detect(c.Client, baseURL, pathOnly, c.nextRequestMethod(), transport.MethodModeFixed)
 
 					if err == nil {
 

@@ -3,13 +3,12 @@ package core
 import (
 	"context"
 	"github.com/MyCode83/godirb/internal/baseline"
+	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/internal/wildcard"
 
 	"github.com/fatih/color"
 	"sync"
 	"time"
-
-	"github.com/valyala/fasthttp"
 )
 
 type Mode int
@@ -28,13 +27,14 @@ type Core struct {
 	Recursive bool
 
 	// infra
-	Client *fasthttp.Client
+	Client *transport.Client
 	Ctx    context.Context
 	Cancel context.CancelFunc
 
 	// Config
 
-	Method      string
+	Method      transport.Method
+	MethodMode  transport.MethodMode
 	Placeholder string
 	UserAgents  []string
 	IgnoreCodes []int
@@ -62,4 +62,18 @@ type Core struct {
 	// State
 	VisitedDirs  map[string]bool
 	VisitedMutex sync.Mutex
+	MethodMutex  sync.Mutex
+}
+
+func (c *Core) nextRequestMethod() transport.Method {
+	if c.MethodMode != transport.MethodModeSwitch {
+		return c.Method
+	}
+
+	c.MethodMutex.Lock()
+	defer c.MethodMutex.Unlock()
+
+	c.Method.Toggle()
+
+	return c.Method
 }
