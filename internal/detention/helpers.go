@@ -21,16 +21,16 @@ func removeFinalSlash(raw string) string {
 	}
 
 	if u.Path != "/" {
-		u.Path = strings.TrimRight(raw, "/")
+		u.Path = strings.TrimRight(u.Path, "/")
 	}
-	
+
 	return u.String()
 }
 
 func addFinalSlash(raw string) string {
 	u, err := url.Parse(raw)
 	if err != nil {
-		return strings.TrimRight(raw, "")
+		return strings.TrimRight(raw, "/") + "/"
 	}
 
 	if !strings.HasSuffix(u.Path, "/") {
