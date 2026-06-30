@@ -17,11 +17,11 @@ DirSearch is a mature web path scanner. godirb is smaller on purpose.
 | Use custom wordlists | ✅ | ✅ |
 | Made in Go | ✅ | ❌ |
 | Works as a single binary | ✅ | ❌ |
-| Baseline filter with heuristics | ✅ | ❌ |
-| Embedded wordlists as Go slices | ✅ | ❌ |
 | Default embedded `medium` wordlist | ✅ | ❌ |
 | Basic scan without runtime wordlist files | ✅ | ❌ |
+
 | Port fuzzing: `http://host:FUZZ` | ✅ | ❌ |
+| URL Fuzzing: http://host/search?q=FUZZ -w xss     | ✅️ | ❌️ |
 
 ## Features
 
