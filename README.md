@@ -17,35 +17,42 @@ Built for quick scans where you want a modern dirb-like tool: run it, get useful
 
 </div>
 
----
+## 📦 Installation
 
-## 🚀 Quick Start
-
-Install:
+### Go
 
 ```bash
 go install github.com/MyCode83/godirb@latest
 ```
 
-Basic scan:
+### Binary
+
+Download the latest release for your platform from the
+**Releases** page and add it to your `PATH`.
+
+---
+
+## 🚀 Quick Start
+
+Basic scan
 
 ```bash
 godirb -u https://example.com
 ```
 
-Recursive:
+Recursive
 
 ```bash
 godirb -u https://example.com -r
 ```
 
-Custom wordlist:
+Custom wordlist
 
 ```bash
 godirb -u https://example.com -w paths.txt
 ```
 
-JSON output:
+JSON output
 
 ```bash
 godirb -u https://example.com --json -o results.json
@@ -196,7 +203,7 @@ godirb -u https://example.com --csv -o results.csv
 | Name | Purpose |
 |------|---------|
 | small | Tiny scans |
-| common | medium alias |
+| common | common.txt from SecLists |
 | medium | Default |
 | big | Larger enumeration |
 | ports | Port fuzzing |
