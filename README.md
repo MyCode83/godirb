@@ -19,9 +19,8 @@ DirSearch is a mature web path scanner. godirb is smaller on purpose.
 | Works as a single binary | ✅ | ❌ |
 | Default embedded `medium` wordlist | ✅ | ❌ |
 | Basic scan without runtime wordlist files | ✅ | ❌ |
-
-| Port fuzzing: `http://host:FUZZ` | ✅ | ❌ |
-| URL Fuzzing: http://host/search?q=FUZZ -w xss     | ✅️ | ❌️ |
+| Port fuzzing: `http://host:FUZZ` | ✅ |❌|
+| URL Fuzzing: http://host/search?q=FUZZ -w xss | ✅️ | ❌️ |
 
 ## Features
 
