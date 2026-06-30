@@ -61,12 +61,10 @@ func (WordlistStruct *Wordlist) LoadWordlist() []string {
 		return listSlice
 	}
 	WordlistStruct.Wordlist = strings.TrimSuffix(strings.ToLower(strings.TrimSpace(WordlistStruct.Wordlist)), ".txt")
-	embedWordlists := []string{"small", "common", "medium", "big", "ports", "payloads", "xss", "lfi"}
+	embedWordlists := []string{"small", "medium", "big", "ports", "payloads", "xss", "lfi"}
 	switch WordlistStruct.Wordlist {
 	case "small":
 		listSlice = Small()
-	case "common":
-		listSlice = Common()
 	case "medium":
 		listSlice = Medium()
 	case "big":

@@ -28,3 +28,17 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+# directory-list-lowercase-2.3-big.txt
+#
+# Copyright 2007 James Fisher
+#
+# This work is licensed under the Creative Commons
+# Attribution-Share Alike 3.0 License. To view a copy of this
+# license, visit http://creativecommons.org/licenses/by-sa/3.0/
+# or send a letter to Creative Commons, 171 Second Street,
+# Suite 300, San Francisco, California, 94105, USA.
+#
+# Priority-ordered case-insensitive list, where entries were found
+# on at least 1 host
+#
