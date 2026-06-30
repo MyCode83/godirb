@@ -1,4 +1,4 @@
-package detention
+package detection
 
 import (
 	"net/url"

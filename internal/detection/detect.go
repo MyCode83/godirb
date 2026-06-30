@@ -1,12 +1,12 @@
-package detention
+package detection
 
 import (
 	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/transport"
 )
 
-func Detect(client *transport.Client, opts transport.RequestOptions) (DetentionResult, error) {
-	var result DetentionResult
+func Detect(client *transport.Client, opts transport.RequestOptions) (DetectionResult, error) {
+	var result DetectionResult
 
 	// pathURL = https://example.com/admin
 	// slashURL = https://example.com/admin/
@@ -14,7 +14,7 @@ func Detect(client *transport.Client, opts transport.RequestOptions) (DetentionR
 	slashURL := addFinalSlash(opts.URL)
 
 	debug.Printf(
-		"detention start url=%q slash_url=%q method=%q mode=%q",
+		"detection start url=%q slash_url=%q method=%q mode=%q",
 		pathURL,
 		slashURL,
 		opts.Method.String(),
@@ -27,7 +27,7 @@ func Detect(client *transport.Client, opts transport.RequestOptions) (DetentionR
 
 	pathRes, err := client.Do(&pathOpts)
 	if err != nil {
-		debug.Error("detention-path", err)
+		debug.Error("detection-path", err)
 		return result, err
 	}
 
@@ -37,14 +37,14 @@ func Detect(client *transport.Client, opts transport.RequestOptions) (DetentionR
 
 	slashRes, err := client.Do(&slashOpts)
 	if err != nil {
-		debug.Error("detention-slash", err)
+		debug.Error("detection-slash", err)
 		return result, err
 	}
 
 	result = classify(pathURL, pathRes, slashRes)
 
-		debug.Printf(
-		"detention result url=%q slash_url=%q status=%d slash_status=%d is_dir=%t is_file=%t unknown=%t",
+	debug.Printf(
+		"detection result url=%q slash_url=%q status=%d slash_status=%d is_dir=%t is_file=%t unknown=%t",
 		pathURL,
 		slashURL,
 		pathRes.StatusCode,

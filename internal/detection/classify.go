@@ -1,14 +1,14 @@
-package detention
+package detection
 
 import (
-	"strings"
 	"path/filepath"
+	"strings"
 
 	"github.com/MyCode83/godirb/internal/transport"
 )
 
-func classify(rawURL string, pathRes, slashRes transport.Response) DetentionResult {
-	var result DetentionResult
+func classify(rawURL string, pathRes, slashRes transport.Response) DetectionResult {
+	var result DetectionResult
 
 	path := urlPath(rawURL)
 	hasExt := filepath.Ext(strings.TrimRight(path, "/")) != ""
@@ -22,7 +22,7 @@ func classify(rawURL string, pathRes, slashRes transport.Response) DetentionResu
 	// /admin -> /admin/ (DIR)
 	case isRedirect(status) && redirectsToSlash(pathRes.Location):
 		result.IsDir = true
-	// /admin -> OK, /admin/ -> 404 (FILE) 
+	// /admin -> OK, /admin/ -> 404 (FILE)
 	case isOK(status) && isNotFound(slashStatus):
 		result.IsFile = true
 	// /admin -> 404, /admin/ -> OK or forbidden (DIR)

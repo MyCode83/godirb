@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/MyCode83/godirb/internal/debug"
-	"github.com/MyCode83/godirb/internal/detention"
+	"github.com/MyCode83/godirb/internal/detection"
 	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/internal/wildcard"
 
@@ -168,8 +168,8 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 
 					pathOnly := strings.TrimPrefix(fullURL, baseURL)
 
-					debug.Printf("dir detention url=%s path=%s", fullURL, pathOnly)
-					DirDetention, err := detention.Detect(c.Client, transport.RequestOptions{
+					debug.Printf("dir detection url=%s path=%s", fullURL, pathOnly)
+					dirDetection, err := detection.Detect(c.Client, transport.RequestOptions{
 						URL:        fullURL,
 						Method:     transport.MethodHEAD,
 						MethodMode: transport.MethodModeFixed,
@@ -181,7 +181,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 
 						switch {
 
-						case DirDetention.IsDir:
+						case dirDetection.IsDir:
 
 							dirPrefix = "DIR"
 
@@ -193,14 +193,14 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 
 							}
 
-						case DirDetention.IsFile:
+						case dirDetection.IsFile:
 							dirPrefix = "FILE"
 						default:
 							dirPrefix = "Unknown"
 						}
-						debug.Printf("dir detention classification url=%s prefix=%s", fullURL, dirPrefix)
+						debug.Printf("dir detection classification url=%s prefix=%s", fullURL, dirPrefix)
 					} else {
-						debug.Error("dir detention", err)
+						debug.Error("dir detection", err)
 					}
 
 					results <- Result{
