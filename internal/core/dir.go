@@ -8,6 +8,7 @@ import (
 	"github.com/MyCode83/godirb/internal/detection"
 	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/internal/wildcard"
+	"github.com/MyCode83/godirb/internal/urlutil"
 
 	"github.com/MyCode83/godirb/pkg/random"
 	"os"
@@ -68,7 +69,11 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					default:
 
 					}
-					fullURL := fmt.Sprintf("%s/%s", dir, word)
+					fullURL, err := urlutil.JoinPath(dir, word)
+					if err != nil {
+						debug.Printf("fullURL error in urlutil.JoinPath(dir, word)")
+						return
+					}
 					headers := c.Header
 					if c.AuthHeader != "" {
 						headers = append(append([]string{}, headers...), "Authorization: "+c.AuthHeader)
@@ -100,7 +105,11 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					if len(c.Exts) > 0 {
 						for _, ext := range c.Exts {
 							// Reset
-							urlWithExt := fullURL + "." + ext
+							urlWithExt, err := urlutil.AddExtension(fullURL, ext)
+							if err != nil {
+								continue
+							}
+							
 							request.URL = urlWithExt
 							request.Method = c.nextRequestMethod()
 							request.UserAgent = random.RandChoice(c.UserAgents)
