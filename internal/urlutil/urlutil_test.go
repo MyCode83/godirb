@@ -1,6 +1,10 @@
-package urlutil
+package urlutil_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/MyCode83/godirb/internal/urlutil"
+)
 
 func TestJoinPath(t *testing.T) {
 	tests := []struct {
@@ -91,7 +95,7 @@ func TestJoinPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := JoinPath(tt.fullURL, tt.newPath)
+			got, err := urlutil.JoinPath(tt.fullURL, tt.newPath)
 			if err != nil {
 				t.Fatalf("JoinPath() error = %v", err)
 			}
@@ -179,7 +183,7 @@ func TestAddExtension(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := AddExtension(tt.fullURL, tt.ext)
+			got, err := urlutil.AddExtension(tt.fullURL, tt.ext)
 			if err != nil {
 				t.Fatalf("AddExtension() error = %v", err)
 			}
@@ -240,7 +244,7 @@ func TestDropQueryAndFragment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := DropQueryAndFragment(tt.raw); got != tt.want {
+			if got := urlutil.DropQueryAndFragment(tt.raw); got != tt.want {
 				t.Fatalf("DropQueryAndFragment() = %q, want %q", got, tt.want)
 			}
 		})
