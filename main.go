@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"runtime"
 
 	"time"
 
@@ -30,8 +29,7 @@ import (
 	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/internal/validate"
 
-	"github.com/MyCode83/godirb/internal/baseline"
-	"github.com/MyCode83/godirb/internal/wildcard"
+	"github.com/MyCode83/godirb/internal/calibration"
 
 	"github.com/MyCode83/godirb/internal/tui"
 
@@ -81,7 +79,7 @@ func main() {
 	}()
 	go func() {
 		<-contextCancel.Done()
-		log.Println(runtime.NumGoroutine())
+
 		// log.Println(": context canceled")
 	}()
 	cfg, wd := cli.ParseFlags()
@@ -226,48 +224,53 @@ func main() {
 		Others: tui.Other,
 		File:   tui.File,
 	}
-	// Wildcard
-	switch mode {
-	case core.ModeDir:
-		debug.Printf("detecting wildcard")
-		wildcard, err := wildcard.DetectWildcard(client, cfg.BaseURL, cfg.Placeholder, cfg.UserAgent...)
-		if err != nil {
-			debug.Error("wildcard detection", err)
-			fmt.Fprintf(os.Stderr, "%s\n", err)
-			os.Exit(2)
-		}
-		debug.Printf("wildcard result active=%t status=%d length=%d tolerance=%d", wildcard.Active, wildcard.Status, wildcard.Lenght, wildcard.Tolerance)
-		if wildcard.Active {
-			fmt.Fprintf(os.Stderr, "[!] Wildcard detected: %d | %d bytes \n", wildcard.Status, wildcard.Lenght)
+	// Calibration
+	debug.Printf("building calibration")
 
-			if cfg.Method != "GET" && !cfg.ForceHead {
-				fmt.Fprintf(os.Stderr, "[!] Wildcard-like behavior detected using HEAD/SWITCH requests.\n")
-				fmt.Fprintf(os.Stderr, "You can skip this confirmation with puting '--force-head'\n")
-				fmt.Fprintf(os.Stderr, "HEAD/SWITCH responses do not include a body, so wildcard filtering\ncannot be done reliably and may produce false positives.\n")
-				fmt.Fprintf(os.Stderr, "\nSwitch cfg.Method to 'GET'? [y/N]: \n")
+	calibrationPlaceholder := ""
+	if mode == core.ModeFuzz {
+		calibrationPlaceholder = cfg.Placeholder
+	}
 
-				if confirmation.WildcardConfirmation() {
-					cfg.Method = "GET"
-					method = transport.MethodGET
-					methodMode = transport.MethodModeFixed
-					engine.Method = method
-					engine.MethodMode = methodMode
-				}
+	cal, err := calibration.Build(client, calibration.Options{
+		BaseURL:     cfg.BaseURL,
+		Placeholder: calibrationPlaceholder,
+		Tries:      3,
+		UserAgents: cfg.UserAgent,
+	})
+	if err != nil {
+		debug.Error("calibration build", err)
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(2)
+	}
+
+	debug.Printf(
+		"calibration result stable=%t wildcard=%t status=%d length=%d tolerance=%d",
+		cal.Stable,
+		cal.Wildcard,
+		cal.Status,
+		cal.Length,
+		cal.Tolerance,
+	)
+
+	if mode == core.ModeDir && cal.Wildcard {
+		if cfg.Method != "GET" && !cfg.ForceHead {
+			fmt.Fprintf(os.Stderr, "[!] Wildcard-like behavior detected using HEAD/SWITCH requests.\n")
+			fmt.Fprintf(os.Stderr, "You can skip this confirmation with '--force-head'\n")
+			fmt.Fprintf(os.Stderr, "HEAD/SWITCH responses do not include a body, so wildcard filtering\ncannot be done reliably and may produce false positives.\n")
+			fmt.Fprintf(os.Stderr, "\nSwitch cfg.Method to 'GET'? [y/N]: \n")
+
+			if confirmation.WildcardConfirmation() {
+				cfg.Method = "GET"
+				method = transport.MethodGET
+				methodMode = transport.MethodModeFixed
+				engine.Method = method
+				engine.MethodMode = methodMode
 			}
 		}
-		engine.Wildcard = wildcard
-	case core.ModeFuzz:
-		debug.Printf("building baseline")
-		baseline, err := baseline.BuildBaseLine(cfg.BaseURL, client, cfg.Placeholder)
-		if err != nil {
-			debug.Error("baseline build", err)
-			fmt.Fprintf(os.Stderr, "%s", err)
-			os.Exit(1)
-		}
-		debug.Printf("baseline result status=%d length=%d tolerance=%d", baseline.Status, baseline.Lenght, baseline.Tolerance)
-		engine.Baseline = baseline
-
 	}
+
+	engine.Calibration = cal
 	results := make([]core.Result, 0)
 	for result := range engine.Run(cfg.BaseURL) {
 		debug.Printf("result prefix=%s status=%d size=%d url=%s extra=%q", result.Prefix, result.Status, result.Size, result.URL, result.Extra)
