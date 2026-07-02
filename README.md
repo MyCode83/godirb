@@ -1,87 +1,228 @@
+<div align="center">
+
 # godirb
 
-[![Go](https://img.shields.io/badge/Go-1.25.1-00ADD8?logo=go)](https://go.dev/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Latest release](https://img.shields.io/github/v/release/MyCode83/godirb?sort=semver)](https://github.com/MyCode83/godirb/releases) 
+**Fast, modern recursive directory and file brute-forcer written in Go.**
 
-`godirb` is a fast recursive directory/file brute-forcer written in Go.
+Built for quick scans where you want a modern dirb-like tool: run it, get useful results, tune the obvious flags, and avoid dragging a full fuzzing framework into a simple job.
 
-It is for the moments where you want a modern `dirb`-like tool: run it, get useful results, tune the obvious flags, and avoid dragging a full fuzzing framework into a simple job.
+<p>
 
-## godirb vs DirSearch
+![License](https://img.shields.io/github/license/MyCode83/godirb?style=for-the-badge)
+![Release](https://img.shields.io/github/v/release/MyCode83/godirb?style=for-the-badge)
+![Go](https://img.shields.io/github/go-mod/go-version/MyCode83/godirb?style=for-the-badge)
+![Stars](https://img.shields.io/github/stars/MyCode83/godirb?style=for-the-badge)
 
-DirSearch is a mature web path scanner. godirb is smaller on purpose.
+</p>
 
-| Feature | godirb | DirSearch |
-| --- | --- | --- |
-| Find files and folders | ✅ | ✅ |
-| Recursive scan | ✅ | ✅ |
-| Use custom wordlists | ✅ | ✅ |
-| Made in Go | ✅ | ❌ |
-| Works as a single binary | ✅ | ❌ |
-| Baseline filter with heuristics | ✅ | ❌ |
-| Embedded wordlists as Go slices | ✅ | ❌ |
-| Default embedded `medium` wordlist | ✅ | ❌ |
-| Basic scan without runtime wordlist files | ✅ | ❌ |
-| Port fuzzing: `http://host:FUZZ` | ✅ | ❌ |
+</div>
 
-## Features
+## 📦 Installation
 
-- Embedded wordlists: `small`, `common`, `medium`, `big`, `ports`, `payloads`, `xss`, `lfi`
-- Default wordlist: `medium`
-- Recursive mode with `-r, --recursive`
-- Extensions with `-x, --ext`
-- Threads with `-t, --threads` (default: `15`)
-- Ignore status codes with `-i, --ignore` (default: `404,400,405,408`)
-- Wildcard detection for directory scans
-- Text, quiet text, JSON, CSV and file output
-
-## Install
+### Go
 
 ```bash
 go install github.com/MyCode83/godirb@latest
 ```
 
-Or download a binary from [Releases](https://github.com/MyCode83/godirb/releases), or build it:
+### Binary
+
+Download the latest release for your platform from the
+**Releases** page and add it to your `PATH`.
+
+---
+
+## 🚀 Quick Start
+
+Basic scan
 
 ```bash
-git clone https://github.com/MyCode83/godirb.git
-cd godirb
-go build -o godirb .
+godirb -u https://example.com
 ```
 
-## Usage
+Recursive
 
 ```bash
-godirb -u http://localhost
-godirb -u http://localhost -r
-godirb -u http://localhost -w ./paths.txt
-godirb -u http://localhost -t 30
-godirb -u http://localhost -i 404,403,500
-godirb -u http://localhost -x php,txt,bak
+godirb -u https://example.com -r
 ```
 
-`FUZZ` in the URL switches to placeholder mode:
+Custom wordlist
 
 ```bash
-godirb -u "http://localhost/search?q=FUZZ" -w payloads
-godirb -u http://localhost:FUZZ
+godirb -u https://example.com -w paths.txt
 ```
 
-## Output
+JSON output
+
+```bash
+godirb -u https://example.com --json -o results.json
+```
+
+---
+
+## ✨ Why godirb?
+
+godirb is designed for the common case: you want to enumerate directories and files quickly, without configuring a large fuzzing framework.
+
+### Highlights
+
+- ⚡ Fast native Go binary
+- 📦 Single executable
+- 📚 Embedded wordlists
+- 🔄 Recursive scanning
+- 📂 Directory and file discovery
+- 🎯 Wildcard detection
+- 🌐 Port fuzzing (`http://host:FUZZ`)
+- 📄 JSON & CSV output
+- 🧩 Simple CLI
+
+---
+
+## 📊 godirb vs DirSearch
+
+DirSearch is a mature and feature-rich web path scanner.
+
+godirb intentionally focuses on the most common workflow: install, run and get useful results with minimal setup.
+
+| Feature | godirb | DirSearch |
+| :--- | :---: | :---: |
+| Find files and folders | ✅ | ✅ |
+| Recursive scan | ✅ | ✅ |
+| Custom wordlists | ✅ | ✅ |
+| Written in Go | ✅ | ❌ |
+| Single binary | ✅ | ❌ |
+| Embedded default wordlists | ✅ | ❌ |
+| Works without runtime wordlist files | ✅ | ❌ |
+| Port fuzzing (`http://host:FUZZ`) | ✅ | ❌ |
+
+---
+
+## 📦 Features
+
+### Scanning
+
+- Directory and file brute-forcing
+- Recursive mode (`-r`, `--recursive`)
+- Extensions (`-x`, `--ext`)
+- Custom wordlists (`-w`, `--wordlist`)
+- FUZZ placeholder mode
+
+### Embedded Wordlists
+
+- small
+- common
+- medium *(default)*
+- big
+- ports
+- payloads
+- xss
+- lfi
+
+### Output
+
+- Standard text
+- Quiet mode
+- JSON
+- CSV
+- File output
+
+### Control
+
+- Threads (`-t`, `--threads`)
+- Ignore status codes (`-i`, `--ignore`)
+- Default ignored codes: `404,400,405,408`
+- Wildcard detection
+
+---
+
+## 💻 Examples
+
+Basic scan
+
+```bash
+godirb -u https://example.com
+```
+
+Recursive
+
+```bash
+godirb -u https://example.com -r
+```
+
+Custom wordlist
+
+```bash
+godirb -u https://example.com -w paths.txt
+```
+
+Extensions
+
+```bash
+godirb -u https://example.com -x php,txt,bak
+```
+
+FUZZ parameter
+
+```bash
+godirb -u "https://example.com/search?q=FUZZ" -w payloads
+```
+
+Port fuzzing
+
+```bash
+godirb -u https://example.com:FUZZ
+```
+
+Export JSON
+
+```bash
+godirb -u https://example.com --json -o results.json
+```
+
+Export CSV
+
+```bash
+godirb -u https://example.com --csv -o results.csv
+```
+
+---
+
+## 📋 Example Output
 
 ```text
-[DIR] http://localhost/admin ---> 200 | 1234
+[DIR]  https://example.com/admin       ---> 200 | 1234
+[FILE] https://example.com/login.php   ---> 200 | 842
+[DIR]  https://example.com/uploads     ---> 403 | 795
 ```
 
-```bash
-godirb -u http://localhost --json -o results.json
-godirb -u http://localhost --csv -o results.csv
-godirb -u http://localhost -q
-```
+---
 
-## Disclaimer
+<details>
+<summary><b>📖 Embedded wordlists</b></summary>
 
-Use godirb only for authorized testing, labs and CTFs. You are responsible for having permission to scan a target.
+| Name | Purpose |
+|------|---------|
+| small | Tiny scans |
+| common | common.txt from SecLists |
+| medium | Default |
+| big | Larger enumeration |
+| ports | Port fuzzing |
+| payloads | Generic payloads |
+| xss | XSS payloads |
+| lfi | LFI payloads |
 
-## License
+</details>
 
-MIT. See [LICENSE](LICENSE).
+---
+
+## ⚠️ Disclaimer
+
+Use **godirb** only for authorized security testing, labs and CTFs.
+
+You are responsible for obtaining permission before scanning any target.
+
+---
+
+## 📄 License
+
+Licensed under the **MIT License**. See **LICENSE** for details.
