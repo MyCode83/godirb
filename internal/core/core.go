@@ -2,10 +2,8 @@ package core
 
 import (
 	"context"
-	"github.com/MyCode83/godirb/internal/baseline"
 	"github.com/MyCode83/godirb/internal/transport"
-	"github.com/MyCode83/godirb/internal/wildcard"
-
+	"github.com/MyCode83/godirb/internal/calibration"
 	"github.com/fatih/color"
 	"sync"
 	"time"
@@ -43,8 +41,7 @@ type Core struct {
 	AuthHeader  string
 	Delay       time.Duration
 	Timeout     time.Duration
-	Wildcard    *wildcard.Wildcard
-	Baseline    *baseline.Baseline
+	Calibration *calibration.Calibration
 	Quiet       bool
 	Debug       bool
 
