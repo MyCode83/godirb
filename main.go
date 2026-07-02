@@ -147,10 +147,10 @@ func main() {
 	}
 
 	outputFormat := output.FromFlags(cfg.JSON, cfg.CSV)
-	collectOutput := cfg.Output != "" || outputFormat != output.FormatText
-	debug.Printf("output format=%d collect_output=%t", outputFormat, collectOutput)
+	streamOutput := cfg.Output != "" || outputFormat != output.FormatText
+	debug.Printf("output format=%d stream_output=%t", outputFormat, streamOutput)
 
-	if !cfg.Quiet && !(collectOutput && cfg.Output == "") {
+	if !cfg.Quiet && !(streamOutput && cfg.Output == "") {
 		fmt.Printf(banner)
 		fmt.Println("\n------------------")
 		fmt.Println("[*] Url: ", cfg.BaseURL)
@@ -236,8 +236,8 @@ func main() {
 		cal, err := calibration.Build(client, calibration.Options{
 			BaseURL:     cfg.BaseURL,
 			Placeholder: calibrationPlaceholder,
-			Tries:      3,
-			UserAgents: cfg.UserAgent,
+			Tries:       3,
+			UserAgents:  cfg.UserAgent,
 		})
 		if err != nil {
 			debug.Error("calibration build", err)
@@ -255,7 +255,6 @@ func main() {
 		)
 
 		if mode == core.ModeDir && cal.Wildcard {
-			fmt.Fprintf(os.Stderr, "[!] Wildcard detected: %d | %d bytes\n", cal.Status, cal.Length)
 
 			if cfg.Method != "GET" && !cfg.ForceHead {
 				fmt.Fprintf(os.Stderr, "[!] Wildcard-like behavior detected using HEAD/SWITCH requests.\n")
@@ -275,22 +274,40 @@ func main() {
 
 		engine.Calibration = cal
 	}
-	results := make([]core.Result, 0)
+	var stream *output.Stream
+	if streamOutput {
+		stream, err = output.NewStream(outputFormat, cfg.Output, cfg.Quiet)
+		if err != nil {
+			debug.Error("output stream open", err)
+			fmt.Fprintf(os.Stderr, "[X] Error writing output: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	var outputErr error
 	for result := range engine.Run(cfg.BaseURL) {
 		debug.Printf("result prefix=%s status=%d size=%d url=%s extra=%q", result.Prefix, result.Status, result.Size, result.URL, result.Extra)
-		if collectOutput {
-			results = append(results, result)
+		if streamOutput {
+			if outputErr != nil {
+				continue
+			}
+			if err := stream.Write(result); err != nil {
+				debug.Error("output stream write", err)
+				outputErr = err
+				cancel()
+			}
 			continue
 		}
 		tui.Print(result, cfg.Quiet)
 	}
-	if collectOutput {
-		debug.Printf("writing collected results count=%d", len(results))
-		if err := output.Write(results, outputFormat, cfg.Output, cfg.Quiet); err != nil {
-			debug.Error("output write", err)
-			fmt.Fprintf(os.Stderr, "[X] Error writing output: %v\n", err)
-			os.Exit(1)
+	if stream != nil {
+		if err := stream.Close(); outputErr == nil {
+			outputErr = err
 		}
+	}
+	if outputErr != nil {
+		fmt.Fprintf(os.Stderr, "[X] Error writing output: %v\n", outputErr)
+		os.Exit(1)
 	}
 	debug.Printf("scan finished")
 
