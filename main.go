@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"runtime"
 
 	"time"
 
@@ -30,8 +29,7 @@ import (
 	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/internal/validate"
 
-	"github.com/MyCode83/godirb/internal/baseline"
-	"github.com/MyCode83/godirb/internal/wildcard"
+	"github.com/MyCode83/godirb/internal/calibration"
 
 	"github.com/MyCode83/godirb/internal/tui"
 
@@ -81,7 +79,7 @@ func main() {
 	}()
 	go func() {
 		<-contextCancel.Done()
-		log.Println(runtime.NumGoroutine())
+
 		// log.Println(": context canceled")
 	}()
 	cfg, wd := cli.ParseFlags()
@@ -149,10 +147,10 @@ func main() {
 	}
 
 	outputFormat := output.FromFlags(cfg.JSON, cfg.CSV)
-	collectOutput := cfg.Output != "" || outputFormat != output.FormatText
-	debug.Printf("output format=%d collect_output=%t", outputFormat, collectOutput)
+	streamOutput := cfg.Output != "" || outputFormat != output.FormatText
+	debug.Printf("output format=%d stream_output=%t", outputFormat, streamOutput)
 
-	if !cfg.Quiet && !(collectOutput && cfg.Output == "") {
+	if !cfg.Quiet && !(streamOutput && cfg.Output == "") {
 		fmt.Printf(banner)
 		fmt.Println("\n------------------")
 		fmt.Println("[*] Url: ", cfg.BaseURL)
@@ -226,23 +224,41 @@ func main() {
 		Others: tui.Other,
 		File:   tui.File,
 	}
-	// Wildcard
-	switch mode {
-	case core.ModeDir:
-		debug.Printf("detecting wildcard")
-		wildcard, err := wildcard.DetectWildcard(client, cfg.BaseURL, cfg.Placeholder, cfg.UserAgent...)
+	// Calibration
+	if mode == core.ModeDir || mode == core.ModeFuzz {
+		debug.Printf("building calibration")
+
+		calibrationPlaceholder := ""
+		if mode == core.ModeFuzz {
+			calibrationPlaceholder = cfg.Placeholder
+		}
+
+		cal, err := calibration.Build(client, calibration.Options{
+			BaseURL:     cfg.BaseURL,
+			Placeholder: calibrationPlaceholder,
+			Tries:       3,
+			UserAgents:  cfg.UserAgent,
+		})
 		if err != nil {
-			debug.Error("wildcard detection", err)
+			debug.Error("calibration build", err)
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(2)
 		}
-		debug.Printf("wildcard result active=%t status=%d length=%d tolerance=%d", wildcard.Active, wildcard.Status, wildcard.Lenght, wildcard.Tolerance)
-		if wildcard.Active {
-			fmt.Fprintf(os.Stderr, "[!] Wildcard detected: %d | %d bytes \n", wildcard.Status, wildcard.Lenght)
+
+		debug.Printf(
+			"calibration result stable=%t wildcard=%t status=%d length=%d tolerance=%d",
+			cal.Stable,
+			cal.Wildcard,
+			cal.Status,
+			cal.Length,
+			cal.Tolerance,
+		)
+
+		if mode == core.ModeDir && cal.Wildcard {
 
 			if cfg.Method != "GET" && !cfg.ForceHead {
 				fmt.Fprintf(os.Stderr, "[!] Wildcard-like behavior detected using HEAD/SWITCH requests.\n")
-				fmt.Fprintf(os.Stderr, "You can skip this confirmation with puting '--force-head'\n")
+				fmt.Fprintf(os.Stderr, "You can skip this confirmation with '--force-head'\n")
 				fmt.Fprintf(os.Stderr, "HEAD/SWITCH responses do not include a body, so wildcard filtering\ncannot be done reliably and may produce false positives.\n")
 				fmt.Fprintf(os.Stderr, "\nSwitch cfg.Method to 'GET'? [y/N]: \n")
 
@@ -255,35 +271,43 @@ func main() {
 				}
 			}
 		}
-		engine.Wildcard = wildcard
-	case core.ModeFuzz:
-		debug.Printf("building baseline")
-		baseline, err := baseline.BuildBaseLine(cfg.BaseURL, client, cfg.Placeholder)
+
+		engine.Calibration = cal
+	}
+	var stream *output.Stream
+	if streamOutput {
+		stream, err = output.NewStream(outputFormat, cfg.Output, cfg.Quiet)
 		if err != nil {
-			debug.Error("baseline build", err)
-			fmt.Fprintf(os.Stderr, "%s", err)
+			debug.Error("output stream open", err)
+			fmt.Fprintf(os.Stderr, "[X] Error writing output: %v\n", err)
 			os.Exit(1)
 		}
-		debug.Printf("baseline result status=%d length=%d tolerance=%d", baseline.Status, baseline.Lenght, baseline.Tolerance)
-		engine.Baseline = baseline
-
 	}
-	results := make([]core.Result, 0)
+
+	var outputErr error
 	for result := range engine.Run(cfg.BaseURL) {
 		debug.Printf("result prefix=%s status=%d size=%d url=%s extra=%q", result.Prefix, result.Status, result.Size, result.URL, result.Extra)
-		if collectOutput {
-			results = append(results, result)
+		if streamOutput {
+			if outputErr != nil {
+				continue
+			}
+			if err := stream.Write(result); err != nil {
+				debug.Error("output stream write", err)
+				outputErr = err
+				cancel()
+			}
 			continue
 		}
 		tui.Print(result, cfg.Quiet)
 	}
-	if collectOutput {
-		debug.Printf("writing collected results count=%d", len(results))
-		if err := output.Write(results, outputFormat, cfg.Output, cfg.Quiet); err != nil {
-			debug.Error("output write", err)
-			fmt.Fprintf(os.Stderr, "[X] Error writing output: %v\n", err)
-			os.Exit(1)
+	if stream != nil {
+		if err := stream.Close(); outputErr == nil {
+			outputErr = err
 		}
+	}
+	if outputErr != nil {
+		fmt.Fprintf(os.Stderr, "[X] Error writing output: %v\n", outputErr)
+		os.Exit(1)
 	}
 	debug.Printf("scan finished")
 

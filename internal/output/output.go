@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/MyCode83/godirb/internal/core"
 )
@@ -31,38 +32,129 @@ func FromFlags(jsonOutput, csvOutput bool) Format {
 	}
 }
 
-func Write(results []core.Result, format Format, outputPath string, quiet bool) error {
+type Stream struct {
+	mu        sync.Mutex
+	writer    io.Writer
+	file      *os.File
+	csvWriter *csv.Writer
+	encoder   *json.Encoder
+	format    Format
+	quiet     bool
+	closed    bool
+}
+
+func NewStream(format Format, outputPath string, quiet bool) (*Stream, error) {
 	writer := io.Writer(os.Stdout)
 	var file *os.File
 	if strings.TrimSpace(outputPath) != "" {
 		var err error
 		file, err = os.Create(outputPath)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		defer file.Close()
 		writer = file
+	}
+
+	stream := &Stream{
+		writer: writer,
+		file:   file,
+		format: format,
+		quiet:  quiet,
 	}
 
 	switch format {
 	case FormatJSON:
-		return writeJSON(writer, results)
+		stream.encoder = json.NewEncoder(writer)
 	case FormatCSV:
-		return writeCSV(writer, results)
-	default:
-		for _, result := range results {
-			if _, err := fmt.Fprintln(writer, FormatTextResult(result, quiet)); err != nil {
-				return err
-			}
+		stream.csvWriter = csv.NewWriter(writer)
+		if err := stream.csvWriter.Write(csvHeader()); err != nil {
+			stream.closeFile()
+			return nil, err
 		}
+		stream.csvWriter.Flush()
+		if err := stream.csvWriter.Error(); err != nil {
+			stream.closeFile()
+			return nil, err
+		}
+	}
+
+	return stream, nil
+}
+
+func (s *Stream) Write(result core.Result) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.closed {
+		return fmt.Errorf("output stream is closed")
+	}
+
+	switch s.format {
+	case FormatJSON:
+		return s.encoder.Encode(result)
+	case FormatCSV:
+		if err := s.csvWriter.Write(csvRecord(result)); err != nil {
+			return err
+		}
+		s.csvWriter.Flush()
+		return s.csvWriter.Error()
+	default:
+		_, err := fmt.Fprintln(s.writer, FormatTextResult(result, s.quiet))
+		return err
+	}
+}
+
+func (s *Stream) Close() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.closed {
 		return nil
 	}
+	s.closed = true
+
+	var err error
+	if s.csvWriter != nil {
+		s.csvWriter.Flush()
+		err = s.csvWriter.Error()
+	}
+	if closeErr := s.closeFile(); err == nil {
+		err = closeErr
+	}
+	return err
+}
+
+func (s *Stream) closeFile() error {
+	if s.file == nil {
+		return nil
+	}
+	err := s.file.Close()
+	s.file = nil
+	return err
+}
+
+func Write(results []core.Result, format Format, outputPath string, quiet bool) error {
+	stream, err := NewStream(format, outputPath, quiet)
+	if err != nil {
+		return err
+	}
+	for _, result := range results {
+		if err := stream.Write(result); err != nil {
+			_ = stream.Close()
+			return err
+		}
+	}
+	return stream.Close()
 }
 
 func writeJSON(writer io.Writer, results []core.Result) error {
 	encoder := json.NewEncoder(writer)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(results)
+	for _, result := range results {
+		if err := encoder.Encode(result); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func FormatTextResult(result core.Result, quiet bool) string {
@@ -77,20 +169,28 @@ func FormatTextResult(result core.Result, quiet bool) string {
 
 func writeCSV(writer io.Writer, results []core.Result) error {
 	csvWriter := csv.NewWriter(writer)
-	if err := csvWriter.Write([]string{"prefix", "url", "status", "size", "extra"}); err != nil {
+	if err := csvWriter.Write(csvHeader()); err != nil {
 		return err
 	}
 	for _, result := range results {
-		if err := csvWriter.Write([]string{
-			result.Prefix,
-			result.URL,
-			strconv.Itoa(result.Status),
-			strconv.Itoa(result.Size),
-			result.Extra,
-		}); err != nil {
+		if err := csvWriter.Write(csvRecord(result)); err != nil {
 			return err
 		}
 	}
 	csvWriter.Flush()
 	return csvWriter.Error()
+}
+
+func csvHeader() []string {
+	return []string{"prefix", "url", "status", "size", "extra"}
+}
+
+func csvRecord(result core.Result) []string {
+	return []string{
+		result.Prefix,
+		result.URL,
+		strconv.Itoa(result.Status),
+		strconv.Itoa(result.Size),
+		result.Extra,
+	}
 }

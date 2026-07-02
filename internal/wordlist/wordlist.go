@@ -28,7 +28,6 @@ func (wd *Wordlist) loadReader(r io.Reader) {
 		if line == "" {
 			continue
 		}
-		fmt.Println(line)
 		listSlice = append(listSlice, line)
 	}
 }

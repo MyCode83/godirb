@@ -1,8 +1,6 @@
 package core
 
 import (
-	"fmt"
-	"os"
 	"time"
 
 	"github.com/MyCode83/godirb/internal/debug"
@@ -20,12 +18,6 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 
 	go func() {
 		defer close(results)
-
-		if c.Baseline == nil {
-			debug.Printf("fuzz run stopped: baseline is nil")
-			fmt.Fprintf(os.Stderr, "[!] Baseline is nil")
-			return
-		}
 
 	launch:
 		for _, word := range c.WL {
@@ -75,9 +67,10 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 				status := response.StatusCode
 				lenght := response.Lenght
 
-				if !c.Baseline.IsInteresting(status, lenght, c.Baseline.Tolerance) {
-					debug.Printf("fuzz filtered baseline url=%s status=%d length=%d baseline_status=%d baseline_length=%d tolerance=%d",
-						fullURL, status, lenght, c.Baseline.Status, c.Baseline.Lenght, c.Baseline.Tolerance)
+				if c.Calibration.Match(status, lenght) {
+					debug.Printf("fuzz filtered calibration url=%s status=%d length=%d calibration_status=%d calibration_length=%d tolerance=%d",
+						fullURL, status, lenght, c.Calibration.Status, c.Calibration.Length, c.Calibration.Tolerance,
+					)
 					return
 				}
 
@@ -96,7 +89,7 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 						debug.Printf("fuzz-ext response status=%d body=%d", response2.StatusCode, response2.Lenght)
 						statusCode2 := response2.StatusCode
 						lenght2 := response2.Lenght
-						if !c.Baseline.IsInteresting(statusCode2, lenght2, c.Baseline.Tolerance) {
+						if c.Calibration.Match(statusCode2, lenght2) {
 							debug.Printf("fuzz-ext filtered baseline url=%s status=%d length=%d", urlWithExt, statusCode2, lenght2)
 							continue
 						}
