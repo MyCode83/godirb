@@ -1,16 +1,14 @@
 package core
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/detection"
 	"github.com/MyCode83/godirb/internal/transport"
-	"github.com/MyCode83/godirb/internal/wildcard"
+	"github.com/MyCode83/godirb/internal/urlutil"
 
 	"github.com/MyCode83/godirb/pkg/random"
-	"os"
 	"slices"
 	"strings"
 )
@@ -21,13 +19,6 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 
 	go func() {
 		defer close(results)
-
-		if c.Wildcard == nil {
-			debug.Printf("dir run stopped: wildcard is nil")
-			fmt.Fprintf(os.Stderr, "[X] Wildcard is nil")
-			return
-		}
-
 		c.WG.Add(1)
 		c.DirsChan <- baseURL
 
@@ -68,7 +59,11 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					default:
 
 					}
-					fullURL := fmt.Sprintf("%s/%s", dir, word)
+					fullURL, err := urlutil.JoinPath(dir, word)
+					if err != nil {
+						debug.Printf("fullURL error in urlutil.JoinPath(dir, word)")
+						return
+					}
 					headers := c.Header
 					if c.AuthHeader != "" {
 						headers = append(append([]string{}, headers...), "Authorization: "+c.AuthHeader)
@@ -89,18 +84,27 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					debug.Printf("dir response status=%d body=%d", response.StatusCode, response.Lenght)
 					status := response.StatusCode
 					lenght := response.Lenght
-					if c.Wildcard.Active {
-						if status == c.Wildcard.Status && wildcard.IsSimilarSize(lenght, c.Wildcard.Lenght, c.Wildcard.Tolerance) {
-							debug.Printf("dir filtered wildcard url=%s status=%d length=%d wildcard_status=%d wildcard_length=%d tolerance=%d",
-								fullURL, status, lenght, c.Wildcard.Status, c.Wildcard.Lenght, c.Wildcard.Tolerance)
-							return
-						}
+					if c.Calibration.Match(status, lenght) {
+						debug.Printf(
+							"dir filtered calibration url=%s status=%d length=%d calibration_status=%d calibration_length=%d tolerance=%d",
+							fullURL,
+							status,
+							lenght,
+							c.Calibration.Status,
+							c.Calibration.Length,
+							c.Calibration.Tolerance,
+						)
+						return
 					}
 
 					if len(c.Exts) > 0 {
 						for _, ext := range c.Exts {
 							// Reset
-							urlWithExt := fullURL + "." + ext
+							urlWithExt, err := urlutil.AddExtension(fullURL, ext)
+							if err != nil {
+								continue
+							}
+							
 							request.URL = urlWithExt
 							request.Method = c.nextRequestMethod()
 							request.UserAgent = random.RandChoice(c.UserAgents)
@@ -113,10 +117,17 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 							debug.Printf("dir-ext response status=%d body=%d", response2.StatusCode, response2.Lenght)
 							statusCode2 := response2.StatusCode
 							lenght2 := response2.Lenght
-							if c.Wildcard.Active && statusCode2 == c.Wildcard.Status && wildcard.IsSimilarSize(lenght2, c.Wildcard.Lenght, c.Wildcard.Tolerance) {
-								debug.Printf("dir-ext filtered wildcard url=%s status=%d length=%d", urlWithExt, statusCode2, lenght2)
-
-								continue
+							if c.Calibration.Match(statusCode2, lenght2) {
+								debug.Printf(
+									"dir filtered calibration url=%s status=%d length=%d calibration_status=%d calibration_length=%d tolerance=%d",
+									fullURL,
+									statusCode2,
+									lenght2,
+									c.Calibration.Status,
+									c.Calibration.Length,
+									c.Calibration.Tolerance,
+								)
+								return
 							}
 							if slices.Contains(c.IgnoreCodes, statusCode2) {
 								debug.Printf("dir-ext ignored url=%s status=%d", urlWithExt, statusCode2)
