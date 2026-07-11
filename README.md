@@ -110,7 +110,6 @@ godirb intentionally focuses on the most common workflow: install, run and get u
 ### Embedded Wordlists
 
 - small
-- common
 - medium *(default)*
 - big
 - ports
@@ -202,10 +201,9 @@ godirb -u https://example.com --csv -o results.csv
 
 | Name | Purpose |
 |------|---------|
-| small | Tiny scans |
-| common | common.txt from SecLists |
-| medium | Default |
-| big | Larger enumeration |
+| small | common.txt from SecLists |
+| medium | Default raft-medium-directories |
+| big | Larger enumeration DirBuster big |
 | ports | Port fuzzing |
 | payloads | Generic payloads |
 | xss | XSS payloads |
