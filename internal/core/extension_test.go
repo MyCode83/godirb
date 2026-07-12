@@ -49,7 +49,6 @@ func TestProcessExtensionsEmitsOnlyUnfilteredResults(t *testing.T) {
 		results,
 		"FILE",
 		"test-ext",
-		false,
 		func(ext string) (string, error) {
 			if ext == "bad-url" {
 				return "", fmt.Errorf("bad extension")
@@ -78,7 +77,7 @@ func TestProcessExtensionsEmitsOnlyUnfilteredResults(t *testing.T) {
 	}
 }
 
-func TestProcessExtensionsStopsOnCalibrationMatch(t *testing.T) {
+func TestProcessExtensionsContinuesOnCalibrationMatch(t *testing.T) {
 	var requestedPaths []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestedPaths = append(requestedPaths, r.URL.Path)
@@ -109,21 +108,20 @@ func TestProcessExtensionsStopsOnCalibrationMatch(t *testing.T) {
 		results,
 		"FILE",
 		"test-ext",
-		true,
 		func(ext string) (string, error) {
 			return server.URL + "/asset." + ext, nil
 		},
 	)
 
-	if ok {
-		t.Fatal("processExtensions returned true, want false")
+	if !ok {
+		t.Fatal("processExtensions returned false, want true")
 	}
 
 	if got := drainResults(results); len(got) != 0 {
 		t.Fatalf("results = %#v, want none", got)
 	}
 
-	if wantPaths := []string{"/asset.one"}; !reflect.DeepEqual(requestedPaths, wantPaths) {
+	if wantPaths := []string{"/asset.one", "/asset.two"}; !reflect.DeepEqual(requestedPaths, wantPaths) {
 		t.Fatalf("requested paths = %#v, want %#v", requestedPaths, wantPaths)
 	}
 }

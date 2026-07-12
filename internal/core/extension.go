@@ -14,7 +14,6 @@ func (c *Core) processExtensions(
 	results chan<- Result,
 	prefix string,
 	debugName string,
-	stopOnCalibration bool,
 	buildURL func(ext string) (string, error),
 ) bool {
 	for _, ext := range c.Exts {
@@ -51,10 +50,6 @@ func (c *Core) processExtensions(
 				statusCode,
 				length,
 			)
-
-			if stopOnCalibration {
-				return false
-			}
 
 			continue
 		}
