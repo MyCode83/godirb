@@ -67,55 +67,27 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 				status := response.StatusCode
 				lenght := response.Lenght
 
+				if len(c.Exts) > 0 {
+					ok := c.processExtensions(
+						&request,
+						results,
+						prefix,
+						"fuzz-ext",
+						func(ext string) (string, error) {
+							return urlParts[0] + word + "." + ext + urlParts[1], nil
+						},
+					)
+
+					if !ok {
+						return
+					}
+				}
+
 				if c.Calibration.Match(status, lenght) {
 					debug.Printf("fuzz filtered calibration url=%s status=%d length=%d calibration_status=%d calibration_length=%d tolerance=%d",
 						fullURL, status, lenght, c.Calibration.Status, c.Calibration.Length, c.Calibration.Tolerance,
 					)
 					return
-				}
-
-				if len(c.Exts) > 0 {
-					for _, ext := range c.Exts {
-						urlWithExt := urlParts[0] + word + "." + ext + urlParts[1]
-						request.URL = urlWithExt
-						request.Method = c.nextRequestMethod()
-						request.UserAgent = random.RandChoice(c.UserAgents)
-						response2, err2 := c.Client.Do(&request)
-
-						if err2 != nil {
-							debug.Error("fuzz-ext", err2)
-							continue
-						}
-						debug.Printf("fuzz-ext response status=%d body=%d", response2.StatusCode, response2.Lenght)
-						statusCode2 := response2.StatusCode
-						lenght2 := response2.Lenght
-						if c.Calibration.Match(statusCode2, lenght2) {
-							debug.Printf("fuzz-ext filtered baseline url=%s status=%d length=%d", urlWithExt, statusCode2, lenght2)
-							continue
-						}
-						if slices.Contains(c.IgnoreCodes, statusCode2) {
-							debug.Printf("fuzz-ext ignored url=%s status=%d", urlWithExt, statusCode2)
-							continue
-						}
-
-						results <- Result{
-							Prefix: prefix,
-							URL:    urlWithExt,
-							Size:   lenght2,
-							Status: statusCode2,
-						}
-
-						if c.Delay > 0 {
-							debug.Printf("fuzz-ext delay=%s url=%s", c.Delay, urlWithExt)
-							select {
-							case <-time.After(c.Delay):
-							case <-c.Ctx.Done():
-								debug.Printf("fuzz-ext canceled during delay url=%s", urlWithExt)
-								return
-							}
-						}
-
-					}
 				}
 				if slices.Contains(c.IgnoreCodes, status) {
 					debug.Printf("fuzz ignored url=%s status=%d", fullURL, status)

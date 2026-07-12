@@ -84,6 +84,23 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					debug.Printf("dir response status=%d body=%d", response.StatusCode, response.Lenght)
 					status := response.StatusCode
 					lenght := response.Lenght
+
+					if len(c.Exts) > 0 {
+						ok := c.processExtensions(
+							&request,
+							results,
+							"FILE",
+							"dir-ext",
+							func(ext string) (string, error) {
+								return urlutil.AddExtension(fullURL, ext)
+							},
+						)
+
+						if !ok {
+							return
+						}
+					}
+
 					if c.Calibration.Match(status, lenght) {
 						debug.Printf(
 							"dir filtered calibration url=%s status=%d length=%d calibration_status=%d calibration_length=%d tolerance=%d",
@@ -97,68 +114,6 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						return
 					}
 
-					if len(c.Exts) > 0 {
-						for _, ext := range c.Exts {
-							// Reset
-							urlWithExt, err := urlutil.AddExtension(fullURL, ext)
-							if err != nil {
-								continue
-							}
-							
-							request.URL = urlWithExt
-							request.Method = c.nextRequestMethod()
-							request.UserAgent = random.RandChoice(c.UserAgents)
-							response2, err2 := c.Client.Do(&request)
-
-							if err2 != nil {
-								debug.Error("dir-ext", err2)
-								continue
-							}
-							debug.Printf("dir-ext response status=%d body=%d", response2.StatusCode, response2.Lenght)
-							statusCode2 := response2.StatusCode
-							lenght2 := response2.Lenght
-							if c.Calibration.Match(statusCode2, lenght2) {
-								debug.Printf(
-									"dir filtered calibration url=%s status=%d length=%d calibration_status=%d calibration_length=%d tolerance=%d",
-									fullURL,
-									statusCode2,
-									lenght2,
-									c.Calibration.Status,
-									c.Calibration.Length,
-									c.Calibration.Tolerance,
-								)
-								return
-							}
-							if slices.Contains(c.IgnoreCodes, statusCode2) {
-								debug.Printf("dir-ext ignored url=%s status=%d", urlWithExt, statusCode2)
-
-								continue
-							}
-
-							dirPrefix = "FILE"
-
-							results <- Result{
-								Prefix: dirPrefix,
-								Size:   lenght2,
-								URL:    urlWithExt,
-								Status: statusCode2,
-							}
-
-							if c.Delay > 0 {
-								debug.Printf("dir-ext delay=%s url=%s", c.Delay, urlWithExt)
-								select {
-
-								case <-time.After(c.Delay):
-
-								case <-c.Ctx.Done():
-									debug.Printf("dir-ext canceled during delay url=%s", urlWithExt)
-									return
-								}
-
-							}
-
-						}
-					}
 					if slices.Contains(c.IgnoreCodes, status) {
 						debug.Printf("dir ignored url=%s status=%d", fullURL, status)
 						return
