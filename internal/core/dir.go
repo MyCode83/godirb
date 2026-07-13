@@ -1,8 +1,6 @@
 package core
 
 import (
-	"time"
-
 	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/detection"
 	"github.com/MyCode83/godirb/internal/transport"
@@ -77,6 +75,9 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					}
 
 					response, err := c.Client.Do(&request)
+					if !c.applyDelay("dir", fullURL) {
+						return
+					}
 					if err != nil {
 						debug.Error("dir", err)
 						return
@@ -142,6 +143,9 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						UserAgent:  random.RandChoice(c.UserAgents),
 						Headers:    headers,
 					})
+					if !c.applyDelay("dir-detection", fullURL) {
+						return
+					}
 
 					if err == nil {
 
@@ -174,16 +178,6 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						Size:   lenght,
 						Status: status,
 						URL:    fullURL,
-					}
-
-					if c.Delay > 0 {
-						debug.Printf("dir delay=%s url=%s", c.Delay, fullURL)
-						select {
-						case <-time.After(c.Delay):
-						case <-c.Ctx.Done():
-							debug.Printf("dir canceled during delay url=%s", fullURL)
-							return
-						}
 					}
 
 				}(word)

@@ -2,10 +2,9 @@ package core
 
 import (
 	"slices"
-	"time"
 
-	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/internal/debug"
+	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/pkg/random"
 )
 
@@ -27,6 +26,9 @@ func (c *Core) processExtensions(
 		request.UserAgent = random.RandChoice(c.UserAgents)
 
 		response, err := c.Client.Do(request)
+		if !c.applyDelay(debugName, urlWithExt) {
+			return false
+		}
 		if err != nil {
 			debug.Error(debugName, err)
 			continue
@@ -69,28 +71,6 @@ func (c *Core) processExtensions(
 			URL:    urlWithExt,
 			Size:   length,
 			Status: statusCode,
-		}
-
-		if c.Delay <= 0 {
-			continue
-		}
-
-		debug.Printf(
-			"%s delay=%s url=%s",
-			debugName,
-			c.Delay,
-			urlWithExt,
-		)
-
-		select {
-		case <-time.After(c.Delay):
-		case <-c.Ctx.Done():
-			debug.Printf(
-				"%s canceled during delay url=%s",
-				debugName,
-				urlWithExt,
-			)
-			return false
 		}
 	}
 

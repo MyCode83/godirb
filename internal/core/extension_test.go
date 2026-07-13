@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/MyCode83/godirb/internal/calibration"
 	"github.com/MyCode83/godirb/internal/transport"
@@ -123,6 +124,52 @@ func TestProcessExtensionsContinuesOnCalibrationMatch(t *testing.T) {
 
 	if wantPaths := []string{"/asset.one", "/asset.two"}; !reflect.DeepEqual(requestedPaths, wantPaths) {
 		t.Fatalf("requested paths = %#v, want %#v", requestedPaths, wantPaths)
+	}
+}
+
+func TestProcessExtensionsDelaysIgnoredResponses(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, "missing")
+	}))
+	defer server.Close()
+
+	c := &Core{
+		Client:      transport.New(&fasthttp.Client{}),
+		Ctx:         context.Background(),
+		Method:      transport.MethodGET,
+		MethodMode:  transport.MethodModeFixed,
+		UserAgents:  []string{"godirb-test"},
+		IgnoreCodes: []int{http.StatusNotFound},
+		Exts:        []string{"one", "two"},
+		Calibration: &calibration.Calibration{},
+		Delay:       20 * time.Millisecond,
+	}
+	results := make(chan Result, len(c.Exts))
+	request := &transport.RequestOptions{MethodMode: transport.MethodModeFixed}
+
+	start := time.Now()
+	ok := c.processExtensions(
+		request,
+		results,
+		"FILE",
+		"test-ext",
+		func(ext string) (string, error) {
+			return server.URL + "/asset." + ext, nil
+		},
+	)
+	elapsed := time.Since(start)
+
+	if !ok {
+		t.Fatal("processExtensions returned false, want true")
+	}
+
+	if got := drainResults(results); len(got) != 0 {
+		t.Fatalf("results = %#v, want none", got)
+	}
+
+	if elapsed < 40*time.Millisecond {
+		t.Fatalf("elapsed = %s, want at least %s", elapsed, 40*time.Millisecond)
 	}
 }
 
