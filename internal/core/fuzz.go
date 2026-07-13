@@ -1,8 +1,6 @@
 package core
 
 import (
-	"time"
-
 	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/pkg/random"
@@ -59,6 +57,9 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 				}
 
 				response, err := c.Client.Do(&request)
+				if !c.applyDelay("fuzz", fullURL) {
+					return
+				}
 				if err != nil {
 					debug.Error("fuzz", err)
 					return
@@ -98,16 +99,6 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 					URL:    fullURL,
 					Size:   lenght,
 					Status: status,
-				}
-
-				if c.Delay > 0 {
-					debug.Printf("fuzz delay=%s url=%s", c.Delay, fullURL)
-					select {
-					case <-time.After(c.Delay):
-					case <-c.Ctx.Done():
-						debug.Printf("fuzz canceled during delay url=%s", fullURL)
-						return
-					}
 				}
 
 			}(word)
