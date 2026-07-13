@@ -26,7 +26,7 @@ var (
 	mode         core.Mode = core.ModeDir
 )
 
-const Version = "1.3.0"
+const Version = "1.3.5"
 
 var PreUserAgents = []string{
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
@@ -39,6 +39,7 @@ type Config struct {
 	URL        string
 	BaseURL    string
 	Threads    int
+	Depth      int
 	IgnoreCode []int
 	Exts       []string
 	RawTimeout string

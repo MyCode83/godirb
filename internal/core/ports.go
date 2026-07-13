@@ -10,7 +10,6 @@ import (
 	"github.com/MyCode83/godirb/pkg/random"
 	"slices"
 	"strings"
-	"time"
 )
 
 func looksLikeService(err error) bool {
@@ -61,6 +60,9 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 					Headers:    headers,
 				}
 				response, err := c.Client.Do(&request)
+				if !c.applyDelay("ports", fullURL) {
+					return
+				}
 				if c.Ctx.Err() != nil {
 					debug.Printf("ports worker canceled url=%s", fullURL)
 					return
@@ -91,16 +93,6 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 					Size:   lenght,
 					Status: status,
 					URL:    fullURL,
-				}
-
-				if c.Delay > 0 {
-					debug.Printf("ports delay=%s url=%s", c.Delay, fullURL)
-					select {
-					case <-time.After(c.Delay):
-					case <-c.Ctx.Done():
-						debug.Printf("ports canceled during delay url=%s", fullURL)
-						return
-					}
 				}
 
 			}(word)

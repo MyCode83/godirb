@@ -50,6 +50,18 @@ func TestJoinPath(t *testing.T) {
 			want:    "https://target.com/%invalid/admin",
 		},
 		{
+			name:    "preserves encoded slash in base",
+			fullURL: "https://target.com/api%2Fv1/",
+			newPath: "admin",
+			want:    "https://target.com/api%2Fv1/admin",
+		},
+		{
+			name:    "preserves escaped spaces in new path",
+			fullURL: "https://target.com/base/",
+			newPath: "admin%20panel",
+			want:    "https://target.com/base/admin%20panel",
+		},
+		{
 			name:    "drops query and fragment from base",
 			fullURL: "https://target.com/admin?x=1#frag",
 			newPath: "login/",
@@ -178,6 +190,18 @@ func TestAddExtension(t *testing.T) {
 			fullURL: "https://target.com/%invalid/admin",
 			ext:     "php",
 			want:    "https://target.com/%invalid/admin.php",
+		},
+		{
+			name:    "preserves encoded slash",
+			fullURL: "https://target.com/api%2Fv1/admin",
+			ext:     "php",
+			want:    "https://target.com/api%2Fv1/admin.php",
+		},
+		{
+			name:    "preserves escaped spaces",
+			fullURL: "https://target.com/admin%20panel",
+			ext:     "php",
+			want:    "https://target.com/admin%20panel.php",
 		},
 	}
 

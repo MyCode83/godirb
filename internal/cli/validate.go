@@ -67,6 +67,11 @@ func ValidateFlags(cfg *Config) {
 		fmt.Fprintf(os.Stderr, "[X] Error, you can't send %d threads.\n", cfg.Threads)
 		os.Exit(2)
 	}
+	if cfg.Depth < -1 {
+		debug.Printf("invalid depth=%d", cfg.Depth)
+		fmt.Fprintln(os.Stderr, "[X] Error: depth must be -1 or greater")
+		os.Exit(2)
+	}
 	if !useColors {
 		color.NoColor = true
 	}

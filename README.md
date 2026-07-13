@@ -46,6 +46,12 @@ Recursive
 godirb -u https://example.com -r
 ```
 
+Recursive with a depth limit
+
+```bash
+godirb -u https://example.com -r --depth 2
+```
+
 Custom wordlist
 
 ```bash
@@ -103,6 +109,7 @@ godirb intentionally focuses on the most common workflow: install, run and get u
 
 - Directory and file brute-forcing
 - Recursive mode (`-r`, `--recursive`)
+- Recursive depth limit (`--depth`, default: 2)
 - Extensions (`-x`, `--ext`)
 - Custom wordlists (`-w`, `--wordlist`)
 - FUZZ placeholder mode
@@ -146,6 +153,12 @@ Recursive
 
 ```bash
 godirb -u https://example.com -r
+```
+
+Recursive with one nested level
+
+```bash
+godirb -u https://example.com -r --depth 1
 ```
 
 Custom wordlist

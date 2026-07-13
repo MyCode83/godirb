@@ -1,8 +1,6 @@
 package core
 
 import (
-	"time"
-
 	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/detection"
 	"github.com/MyCode83/godirb/internal/transport"
@@ -15,12 +13,12 @@ import (
 
 func (c *Core) RunDir(baseURL string) <-chan Result {
 	results := make(chan Result)
-	debug.Printf("dir run start base_url=%q recursive=%t words=%d exts=%v", baseURL, c.Recursive, len(c.WL), c.Exts)
+	debug.Printf("dir run start base_url=%q recursive=%t depth=%d words=%d exts=%v", baseURL, c.Recursive, c.Depth, len(c.WL), c.Exts)
 
 	go func() {
 		defer close(results)
 		c.WG.Add(1)
-		c.DirsChan <- baseURL
+		c.DirsChan <- DirTask{URL: baseURL}
 
 		go func() {
 
@@ -31,7 +29,8 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 
 		// Dirs loop
 	dirLoop:
-		for dir := range c.DirsChan {
+		for task := range c.DirsChan {
+			dir := task.URL
 			debug.Printf("dir queue item=%q", dir)
 
 			// Wordlist loop
@@ -77,6 +76,9 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					}
 
 					response, err := c.Client.Do(&request)
+					if !c.applyDelay("dir", fullURL) {
+						return
+					}
 					if err != nil {
 						debug.Error("dir", err)
 						return
@@ -84,6 +86,23 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					debug.Printf("dir response status=%d body=%d", response.StatusCode, response.Lenght)
 					status := response.StatusCode
 					lenght := response.Lenght
+
+					if len(c.Exts) > 0 {
+						ok := c.processExtensions(
+							&request,
+							results,
+							"FILE",
+							"dir-ext",
+							func(ext string) (string, error) {
+								return urlutil.AddExtension(fullURL, ext)
+							},
+						)
+
+						if !ok {
+							return
+						}
+					}
+
 					if c.Calibration.Match(status, lenght) {
 						debug.Printf(
 							"dir filtered calibration url=%s status=%d length=%d calibration_status=%d calibration_length=%d tolerance=%d",
@@ -97,68 +116,6 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						return
 					}
 
-					if len(c.Exts) > 0 {
-						for _, ext := range c.Exts {
-							// Reset
-							urlWithExt, err := urlutil.AddExtension(fullURL, ext)
-							if err != nil {
-								continue
-							}
-							
-							request.URL = urlWithExt
-							request.Method = c.nextRequestMethod()
-							request.UserAgent = random.RandChoice(c.UserAgents)
-							response2, err2 := c.Client.Do(&request)
-
-							if err2 != nil {
-								debug.Error("dir-ext", err2)
-								continue
-							}
-							debug.Printf("dir-ext response status=%d body=%d", response2.StatusCode, response2.Lenght)
-							statusCode2 := response2.StatusCode
-							lenght2 := response2.Lenght
-							if c.Calibration.Match(statusCode2, lenght2) {
-								debug.Printf(
-									"dir filtered calibration url=%s status=%d length=%d calibration_status=%d calibration_length=%d tolerance=%d",
-									fullURL,
-									statusCode2,
-									lenght2,
-									c.Calibration.Status,
-									c.Calibration.Length,
-									c.Calibration.Tolerance,
-								)
-								return
-							}
-							if slices.Contains(c.IgnoreCodes, statusCode2) {
-								debug.Printf("dir-ext ignored url=%s status=%d", urlWithExt, statusCode2)
-
-								continue
-							}
-
-							dirPrefix = "FILE"
-
-							results <- Result{
-								Prefix: dirPrefix,
-								Size:   lenght2,
-								URL:    urlWithExt,
-								Status: statusCode2,
-							}
-
-							if c.Delay > 0 {
-								debug.Printf("dir-ext delay=%s url=%s", c.Delay, urlWithExt)
-								select {
-
-								case <-time.After(c.Delay):
-
-								case <-c.Ctx.Done():
-									debug.Printf("dir-ext canceled during delay url=%s", urlWithExt)
-									return
-								}
-
-							}
-
-						}
-					}
 					if slices.Contains(c.IgnoreCodes, status) {
 						debug.Printf("dir ignored url=%s status=%d", fullURL, status)
 						return
@@ -187,6 +144,9 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						UserAgent:  random.RandChoice(c.UserAgents),
 						Headers:    headers,
 					})
+					if !c.applyDelay("dir-detection", fullURL) {
+						return
+					}
 
 					if err == nil {
 
@@ -196,11 +156,11 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 
 							dirPrefix = "DIR"
 
-							if c.Recursive {
+							if c.Recursive && (c.Depth < 0 || task.Depth < c.Depth) {
 
 								c.WG.Add(1)
-								c.DirsChan <- fullURL
-								debug.Printf("dir recursive enqueue url=%s", fullURL)
+								c.DirsChan <- DirTask{URL: fullURL, Depth: task.Depth + 1}
+								debug.Printf("dir recursive enqueue url=%s depth=%d", fullURL, task.Depth+1)
 
 							}
 
@@ -219,16 +179,6 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						Size:   lenght,
 						Status: status,
 						URL:    fullURL,
-					}
-
-					if c.Delay > 0 {
-						debug.Printf("dir delay=%s url=%s", c.Delay, fullURL)
-						select {
-						case <-time.After(c.Delay):
-						case <-c.Ctx.Done():
-							debug.Printf("dir canceled during delay url=%s", fullURL)
-							return
-						}
 					}
 
 				}(word)
