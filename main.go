@@ -88,8 +88,8 @@ func main() {
 		return
 	}
 	debug.Set(cfg.Debug)
-	debug.Printf("parsed flags url=%q wordlist=%q threads=%d timeout=%q delay=%q method=%q recursive=%t quiet=%t json=%t csv=%t output=%q",
-		cfg.URL, wd.Wordlist, cfg.Threads, cfg.RawTimeout, cfg.RawDelay, cfg.Method, cfg.Recursive, cfg.Quiet, cfg.JSON, cfg.CSV, cfg.Output)
+	debug.Printf("parsed flags url=%q wordlist=%q threads=%d depth=%d timeout=%q delay=%q method=%q recursive=%t quiet=%t json=%t csv=%t output=%q",
+		cfg.URL, wd.Wordlist, cfg.Threads, cfg.Depth, cfg.RawTimeout, cfg.RawDelay, cfg.Method, cfg.Recursive, cfg.Quiet, cfg.JSON, cfg.CSV, cfg.Output)
 	cli.ValidateFlags(&cfg)
 	debug.Printf("validated flags base_url=%q timeout=%s delay=%s ignore=%v exts=%v headers=%d proxy=%q insecure=%t",
 		cfg.BaseURL, cfg.Timeout, cfg.Delay, cfg.IgnoreCode, cfg.Exts, len(cfg.Header), cfg.Proxy, cfg.Insecure)
@@ -172,9 +172,9 @@ func main() {
 	}
 
 	limiter := make(chan struct{}, cfg.Threads)
-	var dirsChan chan string
+	var dirsChan chan core.DirTask
 	if mode == core.ModeDir {
-		dirsChan = make(chan string, cfg.Threads*50)
+		dirsChan = make(chan core.DirTask, cfg.Threads*50)
 	}
 
 	engine := &core.Core{
@@ -191,6 +191,7 @@ func main() {
 		// Config
 		Timeout: cfg.Timeout,
 		Delay:   cfg.Delay,
+		Depth:   cfg.Depth,
 		Quiet:   cfg.Quiet,
 		Debug:   cfg.Debug,
 
