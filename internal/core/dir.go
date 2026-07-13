@@ -13,12 +13,12 @@ import (
 
 func (c *Core) RunDir(baseURL string) <-chan Result {
 	results := make(chan Result)
-	debug.Printf("dir run start base_url=%q recursive=%t words=%d exts=%v", baseURL, c.Recursive, len(c.WL), c.Exts)
+	debug.Printf("dir run start base_url=%q recursive=%t depth=%d words=%d exts=%v", baseURL, c.Recursive, c.Depth, len(c.WL), c.Exts)
 
 	go func() {
 		defer close(results)
 		c.WG.Add(1)
-		c.DirsChan <- baseURL
+		c.DirsChan <- DirTask{URL: baseURL}
 
 		go func() {
 
@@ -29,7 +29,8 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 
 		// Dirs loop
 	dirLoop:
-		for dir := range c.DirsChan {
+		for task := range c.DirsChan {
+			dir := task.URL
 			debug.Printf("dir queue item=%q", dir)
 
 			// Wordlist loop
@@ -155,11 +156,11 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 
 							dirPrefix = "DIR"
 
-							if c.Recursive {
+							if c.Recursive && (c.Depth < 0 || task.Depth < c.Depth) {
 
 								c.WG.Add(1)
-								c.DirsChan <- fullURL
-								debug.Printf("dir recursive enqueue url=%s", fullURL)
+								c.DirsChan <- DirTask{URL: fullURL, Depth: task.Depth + 1}
+								debug.Printf("dir recursive enqueue url=%s depth=%d", fullURL, task.Depth+1)
 
 							}
 

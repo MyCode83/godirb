@@ -17,6 +17,7 @@ func ParseFlags() (Config, wordlist.Wordlist) {
 	pflag.StringVarP(&cfg.URL, "url", "u", "", "Target URL (e.g. https://localhost)")
 	pflag.StringVarP(&wd.Wordlist, "wordlist", "w", "medium", "Embedded wordlist name or path to a custom wordlist. Default: medium")
 	pflag.IntVarP(&cfg.Threads, "threads", "t", 15, "Number of worker goroutines to use. Default: 15")
+	pflag.IntVar(&cfg.Depth, "depth", 2, "Maximum recursive depth when --recursive is enabled. Default: 2")
 	pflag.IntSliceVarP(&cfg.IgnoreCode, "ignore", "i", []int{404, 400, 405, 408}, "Comma-separated list of status codes to ignore")
 	pflag.StringSliceVarP(&cfg.Exts, "ext", "x", nil, "Comma-separated list of file extensions to append")
 	pflag.StringVarP(&cfg.RawTimeout, "timeout", "T", "5s", "Request timeout in seconds. Default: 5")

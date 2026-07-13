@@ -48,7 +48,7 @@ func TestRunDirProcessesExtensionsBeforeFilteringBaseCalibration(t *testing.T) {
 			Stable:    true,
 		},
 		Limiter:     make(chan struct{}, 1),
-		DirsChan:    make(chan string, 1),
+		DirsChan:    make(chan DirTask, 1),
 		WG:          &sync.WaitGroup{},
 		WL:          []string{"asset"},
 		VisitedDirs: map[string]bool{},
@@ -105,7 +105,8 @@ func TestRunDirRecursiveJoinDoesNotCreateDoubleSlashPaths(t *testing.T) {
 			Stable:    true,
 		},
 		Limiter:     make(chan struct{}, 1),
-		DirsChan:    make(chan string, 4),
+		Depth:       -1,
+		DirsChan:    make(chan DirTask, 4),
 		WG:          &sync.WaitGroup{},
 		WL:          []string{"admin/", "child"},
 		VisitedDirs: map[string]bool{},
@@ -121,6 +122,53 @@ func TestRunDirRecursiveJoinDoesNotCreateDoubleSlashPaths(t *testing.T) {
 
 	if !slices.Contains(requestedPaths, "/admin/child") {
 		t.Fatalf("requested paths = %#v, want recursive child path /admin/child", requestedPaths)
+	}
+}
+
+func TestRunDirRecursiveHonorsDepthLimit(t *testing.T) {
+	var requestedPaths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPaths = append(requestedPaths, r.URL.Path)
+
+		switch r.URL.Path {
+		case "/admin/", "/admin/child", "/admin/child/grandchild":
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "found")
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, "missing")
+		}
+	}))
+	defer server.Close()
+
+	c := &Core{
+		Client:     transport.New(&fasthttp.Client{}),
+		Ctx:        context.Background(),
+		Method:     transport.MethodGET,
+		MethodMode: transport.MethodModeFixed,
+		Recursive:  true,
+		Depth:      1,
+		UserAgents: []string{"godirb-test"},
+		Calibration: &calibration.Calibration{
+			Status:    http.StatusNotFound,
+			Length:    len("missing"),
+			Tolerance: 0,
+			Stable:    true,
+		},
+		Limiter:     make(chan struct{}, 1),
+		DirsChan:    make(chan DirTask, 4),
+		WG:          &sync.WaitGroup{},
+		WL:          []string{"admin/", "child", "grandchild"},
+		VisitedDirs: map[string]bool{},
+	}
+
+	collectResults(c.RunDir(server.URL))
+
+	if !slices.Contains(requestedPaths, "/admin/child") {
+		t.Fatalf("requested paths = %#v, want recursive child path /admin/child", requestedPaths)
+	}
+	if slices.Contains(requestedPaths, "/admin/child/grandchild") {
+		t.Fatalf("requested paths = %#v, did not want grandchild path beyond depth limit", requestedPaths)
 	}
 }
 

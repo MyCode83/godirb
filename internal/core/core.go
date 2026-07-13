@@ -2,8 +2,8 @@ package core
 
 import (
 	"context"
-	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/internal/calibration"
+	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/fatih/color"
 	"sync"
 	"time"
@@ -41,6 +41,7 @@ type Core struct {
 	AuthHeader  string
 	Delay       time.Duration
 	Timeout     time.Duration
+	Depth       int
 	Calibration *calibration.Calibration
 	Quiet       bool
 	Debug       bool
@@ -51,7 +52,7 @@ type Core struct {
 
 	// Concurrency
 	Limiter  chan struct{}
-	DirsChan chan string
+	DirsChan chan DirTask
 
 	WG *sync.WaitGroup
 	WL []string
@@ -60,6 +61,11 @@ type Core struct {
 	VisitedDirs  map[string]bool
 	VisitedMutex sync.Mutex
 	MethodMutex  sync.Mutex
+}
+
+type DirTask struct {
+	URL   string
+	Depth int
 }
 
 func (c *Core) nextRequestMethod() transport.Method {

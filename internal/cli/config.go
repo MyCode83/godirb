@@ -39,6 +39,7 @@ type Config struct {
 	URL        string
 	BaseURL    string
 	Threads    int
+	Depth      int
 	IgnoreCode []int
 	Exts       []string
 	RawTimeout string
