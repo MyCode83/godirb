@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/MyCode83/godirb/internal/calibration"
 	"github.com/MyCode83/godirb/internal/transport"
@@ -68,5 +69,44 @@ func TestRunFuzzProcessesExtensionsBeforeFilteringBaseCalibration(t *testing.T) 
 
 	if wantPaths := []string{"/asset", "/asset.php", "/asset.js"}; !reflect.DeepEqual(requestedPaths, wantPaths) {
 		t.Fatalf("requested paths = %#v, want %#v", requestedPaths, wantPaths)
+	}
+}
+
+func TestRunFuzzDelaysCalibrationFilteredResponses(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, "missing")
+	}))
+	defer server.Close()
+
+	c := &Core{
+		Client:      transport.New(&fasthttp.Client{}),
+		Ctx:         context.Background(),
+		Method:      transport.MethodGET,
+		MethodMode:  transport.MethodModeFixed,
+		Placeholder: "FUZZ",
+		UserAgents:  []string{"godirb-test"},
+		Calibration: &calibration.Calibration{
+			Status:    http.StatusNotFound,
+			Length:    len("missing"),
+			Tolerance: 0,
+			Stable:    true,
+		},
+		Delay:   20 * time.Millisecond,
+		Limiter: make(chan struct{}, 1),
+		WG:      &sync.WaitGroup{},
+		WL:      []string{"one", "two"},
+	}
+
+	start := time.Now()
+	got := collectResults(c.RunFuzz(server.URL + "/FUZZ"))
+	elapsed := time.Since(start)
+
+	if len(got) != 0 {
+		t.Fatalf("results = %#v, want none", got)
+	}
+
+	if elapsed < 40*time.Millisecond {
+		t.Fatalf("elapsed = %s, want at least %s", elapsed, 40*time.Millisecond)
 	}
 }
