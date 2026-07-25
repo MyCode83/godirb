@@ -1,0 +1,35 @@
+name: Publish to Homebrew
+
+on:
+  release:
+    types: [published]
+
+  workflow_dispatch:
+
+jobs:
+  homebrew:
+    name: Update Homebrew tap
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate and publish formula
+        uses: Justintime50/homebrew-releaser@v3
+        with:
+          homebrew_owner: MyCode83
+          homebrew_tap: homebrew-godirb
+          formula_folder: Formula
+
+          github_token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+          commit_owner: MyCode83
+          commit_email: MyCode83@users.noreply.github.com
+
+          depends_on: '"go" => :build'
+
+          install: |
+            system "go", "build", *std_go_args(ldflags: "-s -w"), "."
+
+          test: |
+            system "#{bin}/godirb", "--help"
+
+          debug: true
