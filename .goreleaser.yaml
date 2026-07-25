@@ -1,3 +1,14 @@
+version: 2
+
+archives:
+  - formats:
+      - tar.gz
+
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+
 changelog:
   sort: asc
 
