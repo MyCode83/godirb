@@ -1,5 +1,7 @@
 package calibration
 
+var entries []entry
+
 type Calibration struct {
 	Status    int
 	Length    int
@@ -22,4 +24,10 @@ type Options struct {
 	Placeholder string
 	Tries       int
 	UserAgents  []string
+}
+
+type entry struct {
+	BaseURL 	string
+	Placeholder string
+	Calibration	*Calibration
 }

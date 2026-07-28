@@ -13,9 +13,9 @@ const (
 	defaultRandomLength = 12
 )
 
-func Build(client *transport.Client, opts Options) (*Calibration, error) {
+func Build(client *transport.Client, opts Options) error {
 	if client == nil {
-		return nil, fmt.Errorf("nil transport client")
+		return fmt.Errorf("nil transport client")
 	}
 
 	if opts.Tries <= 0 {
@@ -34,7 +34,7 @@ func Build(client *transport.Client, opts Options) (*Calibration, error) {
 	for range opts.Tries {
 		url, err := generateURL(opts.BaseURL, opts.Placeholder)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		response, err := client.Do(&transport.RequestOptions{
@@ -45,7 +45,7 @@ func Build(client *transport.Client, opts Options) (*Calibration, error) {
 		})
 		if err != nil {
 			debug.Error("calibration", err)
-			return nil, err
+			return err
 		}
 
 		debug.Printf(
@@ -63,5 +63,13 @@ func Build(client *transport.Client, opts Options) (*Calibration, error) {
 	}
 
 	calibration := buildSignature(samples)
-	return calibration, nil
+
+	entries = append(entries, entry{
+		BaseURL: opts.BaseURL,
+		Placeholder: opts.Placeholder,
+		Calibration: calibration,
+	},
+	)
+
+	return nil
 }
