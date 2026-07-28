@@ -24,6 +24,10 @@ Built for quick scans where you want a modern dirb-like tool: run it, get useful
 ```bash
 go install github.com/MyCode83/godirb@latest
 ```
+## Homebrew
+```bash
+brew install MyCode83/godirb/godirb
+```
 
 ### Binary
 
