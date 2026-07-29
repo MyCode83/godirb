@@ -107,10 +107,7 @@ func TestJoinPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := urlutil.JoinPath(tt.fullURL, tt.newPath)
-			if err != nil {
-				t.Fatalf("JoinPath() error = %v", err)
-			}
+			got := urlutil.JoinPath(tt.fullURL, tt.newPath)
 			if got != tt.want {
 				t.Fatalf("JoinPath() = %q, want %q", got, tt.want)
 			}
@@ -207,10 +204,7 @@ func TestAddExtension(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := urlutil.AddExtension(tt.fullURL, tt.ext)
-			if err != nil {
-				t.Fatalf("AddExtension() error = %v", err)
-			}
+			got := urlutil.AddExtension(tt.fullURL, tt.ext)
 			if got != tt.want {
 				t.Fatalf("AddExtension() = %q, want %q", got, tt.want)
 			}

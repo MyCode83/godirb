@@ -2,33 +2,33 @@ package urlutil
 
 import "strings"
 
-func JoinPath(fullURL, newPath string) (string, error) {
+func JoinPath(fullURL, newPath string) string {
 	base := DropQueryAndFragment(fullURL)
 	if base == "" {
 		path := strings.TrimLeft(newPath, "/")
 		if path == "" {
-			return "/", nil
+			return "/"
 		}
-		return DropQueryAndFragment("/" + path), nil
+		return DropQueryAndFragment("/" + path)
 	}
 
 	if newPath == "" {
-		return base, nil
+		return base
 	}
 
 	path := strings.TrimLeft(newPath, "/")
 	if strings.HasSuffix(base, "/") {
-		return DropQueryAndFragment(base + path), nil
+		return DropQueryAndFragment(base + path)
 	}
 
-	return DropQueryAndFragment(base + "/" + path), nil
+	return DropQueryAndFragment(base + "/" + path)
 }
 
-func AddExtension(fullURL, ext string) (string, error) {
+func AddExtension(fullURL, ext string) string {
 	base := DropQueryAndFragment(fullURL)
 	cleanExt := strings.TrimSpace(ext)
 	if cleanExt == "" {
-		return base, nil
+		return base
 	}
 
 	if !strings.HasPrefix(cleanExt, ".") {
@@ -36,7 +36,7 @@ func AddExtension(fullURL, ext string) (string, error) {
 	}
 
 	base = strings.TrimSuffix(base, "/")
-	return DropQueryAndFragment(base + cleanExt), nil
+	return DropQueryAndFragment(base + cleanExt)
 }
 
 func DropQueryAndFragment(raw string) string {
