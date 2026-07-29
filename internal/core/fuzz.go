@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/transport"
+	"github.com/MyCode83/godirb/internal/calibration"
 	"github.com/MyCode83/godirb/pkg/random"
 	"slices"
 	"strings"
@@ -16,6 +17,31 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 
 	go func() {
 		defer close(results)
+
+		if len(c.Exts) > 0 {
+			for _, ext := range c.Exts {
+				if !strings.HasPrefix(ext, ".") {
+					ext = "." + ext
+				}
+
+				urlParts := strings.Split(baseURL, c.Placeholder)
+				templateURL := urlParts[0] + ExtPlaceholder + ext + urlParts[1]
+
+				if _, ok := calibration.Get(templateURL, ExtPlaceholder); ok {
+					continue
+				}
+
+				if err := calibration.Build(c.Client, calibration.Options{
+					BaseURL:     templateURL,
+					Placeholder: ExtPlaceholder,
+					Tries:       3,
+					UserAgents:  c.UserAgents,
+				}); err != nil {
+					debug.Error("fuzz extension calibration build", err)
+					continue
+				}
+			}
+		}
 
 	launch:
 		for _, word := range c.WL {
