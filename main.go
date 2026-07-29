@@ -106,9 +106,9 @@ func main() {
 	}
 	switch mode {
 	case core.ModeFuzz:
-		if !pflag.Lookup("placeholder").Changed {
+		if !pflag.Lookup("ext").Changed {
 			cfg.Exts = []string{}
-			debug.Printf("fuzz mode without explicit placeholder; extensions disabled")
+			debug.Printf("fuzz mode without explicit --ext; extensions disabled")
 		}
 	case core.ModePort:
 		if !pflag.Lookup("wordlist").Changed {
