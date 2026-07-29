@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+	"errors"
+	"net"
 
 	// "github.com/MyCode83/godirb/internal/assemble"
 
@@ -12,13 +14,53 @@ import (
 	"strings"
 )
 
-func looksLikeService(err error) bool {
-	s := err.Error()
-	result := strings.Contains(s, "tls") ||
-		strings.Contains(s, "EOF") ||
-		strings.Contains(s, "reset")
-	debug.Printf("port service error check error=%q result=%t", s, result)
-	return result
+func looksLikeOpenService(err error) bool {
+	if err == nil {
+		return true
+	}
+
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		debug.Printf("port error classified as timeout error=%q", err)
+		return false
+	}
+
+	message := strings.ToLower(err.Error())
+
+	closedOrUnknown := []string{
+		"connection refused",
+		"no route to host",
+		"network is unreachable",
+		"host is down",
+		"context deadline exceeded",
+		"i/o timeout",
+		"handshake timed out",
+	}
+
+	for _, pattern := range closedOrUnknown {
+		if strings.Contains(message, pattern) {
+			debug.Printf(
+				"port error classified as closed-or-filtered error=%q pattern=%q",
+				err,
+				pattern,
+			)
+			return false
+		}
+	}
+
+	for _, pattern := range openServiceSignals {
+		if strings.Contains(message, pattern) {
+			debug.Printf(
+				"port error classified as probable-service error=%q pattern=%q",
+				err,
+				pattern,
+			)
+			return true
+		}
+	}
+
+	debug.Printf("port error classified as unknown error=%q", err)
+	return false
 }
 
 func (c *Core) RunPorts(baseUrl string) <-chan Result {
@@ -70,7 +112,7 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 				status := response.StatusCode
 				if err != nil {
 					debug.Error("ports", err)
-					if looksLikeService(err) {
+					if looksLikeOpenService(err) {
 						results <- Result{
 							Prefix: "?",
 							URL:    fullURL,
