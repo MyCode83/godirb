@@ -40,7 +40,7 @@ func BuildProxyAndClient(proxy string, timeout time.Duration, insecure bool) *fa
 			client.Dial = fasthttpproxy.FasthttpSocksDialer(proxy)
 		default:
 			debug.Printf("unknown proxy scheme proxy=%q", proxy)
-			fmt.Fprintf(os.Stderr, "\n[!] Unkown proxy scheme %s", proxy)
+			fmt.Fprintf(os.Stderr, "\n[!] Unknown proxy scheme %s", proxy)
 			if !confirmation.ProxyConfirmation() {
 				os.Exit(2)
 			}

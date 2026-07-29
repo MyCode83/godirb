@@ -3,6 +3,7 @@ package core
 import (
 	"slices"
 
+	"github.com/MyCode83/godirb/internal/calibration"
 	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/pkg/random"
@@ -13,13 +14,17 @@ func (c *Core) processExtensions(
 	results chan<- Result,
 	prefix string,
 	debugName string,
-	buildURL func(ext string) (string, error),
+	buildURL func(ext string) string,
+	buildCalibrationURL func(ext string) string,
 ) bool {
 	for _, ext := range c.Exts {
-		urlWithExt, err := buildURL(ext)
-		if err != nil {
+		cal, ok := calibration.Get(buildCalibrationURL(ext), ExtPlaceholder)
+		if !ok {
+			debug.Printf("extension %q calibration not exists continue", ext)
 			continue
 		}
+
+		urlWithExt := buildURL(ext)
 
 		request.URL = urlWithExt
 		request.Method = c.nextRequestMethod()
@@ -44,7 +49,7 @@ func (c *Core) processExtensions(
 		statusCode := response.StatusCode
 		length := response.Lenght
 
-		if c.Calibration.Match(statusCode, length) {
+		if cal.Match(statusCode, length) {
 			debug.Printf(
 				"%s filtered calibration url=%s status=%d length=%d",
 				debugName,

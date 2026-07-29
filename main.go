@@ -234,7 +234,7 @@ func main() {
 			calibrationPlaceholder = cfg.Placeholder
 		}
 
-		cal, err := calibration.Build(client, calibration.Options{
+		err := calibration.Build(client, calibration.Options{
 			BaseURL:     cfg.BaseURL,
 			Placeholder: calibrationPlaceholder,
 			Tries:       3,
@@ -243,6 +243,19 @@ func main() {
 		if err != nil {
 			debug.Error("calibration build", err)
 			fmt.Fprintf(os.Stderr, "%s\n", err)
+			os.Exit(2)
+		}
+
+		cal, ok := calibration.Get(cfg.BaseURL, calibrationPlaceholder)
+		
+		if !ok {
+			err := fmt.Errorf(
+			"calibration not found after build: base_url=%q placeholder=%q",
+			cfg.BaseURL,
+			calibrationPlaceholder,
+			)
+			debug.Error("calibration get", err)
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}
 

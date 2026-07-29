@@ -21,7 +21,7 @@ func generateURL(BaseURL, placeholder string) (string, error) {
 		return parts[0] + randomText + parts[1], nil
 	}
 
-	return urlutil.JoinPath(BaseURL, randomText)
+	return urlutil.JoinPath(BaseURL, randomText), nil
 }
 
 func buildSignature(samples []Sample) *Calibration {

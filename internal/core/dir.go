@@ -1,15 +1,19 @@
 package core
 
 import (
+	"github.com/MyCode83/godirb/internal/calibration"
 	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/detection"
 	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/internal/urlutil"
 
-	"github.com/MyCode83/godirb/pkg/random"
 	"slices"
 	"strings"
+
+	"github.com/MyCode83/godirb/pkg/random"
 )
+
+const ExtPlaceholder = "GODIRB_EXT_PLACEHOLDER"
 
 func (c *Core) RunDir(baseURL string) <-chan Result {
 	results := make(chan Result)
@@ -33,6 +37,50 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 			dir := task.URL
 			debug.Printf("dir queue item=%q", dir)
 
+			cal, ok := calibration.Get(dir, "")
+			if !ok {
+				err := calibration.Build(c.Client, calibration.Options{
+						BaseURL:     dir,
+						Placeholder: "",
+						Tries:       3,
+						UserAgents:  c.UserAgents,
+				})
+				if err != nil {
+					debug.Error("dir calibration build", err)
+					c.WG.Done()
+					continue
+				}
+
+				cal, ok = calibration.Get(dir, "")
+				if !ok {
+					debug.Printf("dir calibration missing after build base_url=%q", dir)
+					c.WG.Done()
+					continue
+				}
+			}
+
+			if len(c.Exts) > 0 {
+				for _, ext := range c.Exts {
+					base := urlutil.JoinPath(dir, ExtPlaceholder)
+
+					templateURL := urlutil.AddExtension(base, ext)
+
+					if _, ok := calibration.Get(templateURL, ExtPlaceholder); ok {
+						continue
+					}
+
+					if err := calibration.Build(c.Client, calibration.Options{
+						BaseURL:     templateURL,
+						Placeholder: ExtPlaceholder,
+						Tries:       3,
+						UserAgents:  c.UserAgents,
+					}); err != nil {
+						debug.Error("extension calibration build", err)
+						continue
+					}
+				}
+			}
+
 			// Wordlist loop
 			for _, word := range c.WL {
 				select {
@@ -45,7 +93,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 				}
 				word = strings.TrimLeft(word, "/")
 				c.WG.Add(1)
-				go func(word string) {
+				go func(word string, cal *calibration.Calibration) {
 					dirPrefix := ""
 
 					defer c.WG.Done()
@@ -58,11 +106,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					default:
 
 					}
-					fullURL, err := urlutil.JoinPath(dir, word)
-					if err != nil {
-						debug.Printf("fullURL error in urlutil.JoinPath(dir, word)")
-						return
-					}
+					fullURL:= urlutil.JoinPath(dir, word)
 					headers := c.Header
 					if c.AuthHeader != "" {
 						headers = append(append([]string{}, headers...), "Authorization: "+c.AuthHeader)
@@ -93,8 +137,11 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 							results,
 							"FILE",
 							"dir-ext",
-							func(ext string) (string, error) {
+							func(ext string) string {
 								return urlutil.AddExtension(fullURL, ext)
+							},
+							func(ext string) string {
+								return urlutil.AddExtension(urlutil.JoinPath(dir, ExtPlaceholder), ext)
 							},
 						)
 
@@ -103,15 +150,15 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						}
 					}
 
-					if c.Calibration.Match(status, lenght) {
+					if cal.Match(status, lenght) {
 						debug.Printf(
 							"dir filtered calibration url=%s status=%d length=%d calibration_status=%d calibration_length=%d tolerance=%d",
 							fullURL,
 							status,
 							lenght,
-							c.Calibration.Status,
-							c.Calibration.Length,
-							c.Calibration.Tolerance,
+							cal.Status,
+							cal.Length,
+							cal.Tolerance,
 						)
 						return
 					}
@@ -157,6 +204,16 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 							dirPrefix = "DIR"
 
 							if c.Recursive && (c.Depth < 0 || task.Depth < c.Depth) {
+								err := calibration.Build(c.Client, calibration.Options{
+									BaseURL: fullURL,
+									Placeholder: "",
+									Tries: 3,
+									UserAgents: c.UserAgents,
+								})			
+								if err != nil {
+									debug.Error("recursive calibration build", err)
+									break
+								}
 
 								c.WG.Add(1)
 								c.DirsChan <- DirTask{URL: fullURL, Depth: task.Depth + 1}
@@ -181,7 +238,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						URL:    fullURL,
 					}
 
-				}(word)
+				}(word, cal)
 			}
 
 			c.WG.Done()

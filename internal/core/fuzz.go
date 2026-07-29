@@ -74,8 +74,20 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 						results,
 						prefix,
 						"fuzz-ext",
-						func(ext string) (string, error) {
-							return urlParts[0] + word + "." + ext + urlParts[1], nil
+						func(ext string) string {
+							if !strings.HasPrefix(ext, ".") {
+								ext = "." + ext
+							}
+
+							return urlParts[0] + word + ext + urlParts[1]
+						},
+
+						func(ext string) string {
+							if !strings.HasPrefix(ext, ".") {
+								ext = "." + ext
+							}
+							
+							return urlParts[0] + ExtPlaceholder + ext + urlParts[1]
 						},
 					)
 
