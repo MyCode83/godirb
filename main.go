@@ -44,10 +44,10 @@ const banner string = (`
 /____/
 `)
 
+var version = "dev"
+
 var (
 	wg           sync.WaitGroup
-	tasksWG      sync.WaitGroup
-	visitedMutex sync.Mutex
 	mode         core.Mode = core.ModeDir
 )
 
@@ -84,7 +84,7 @@ func main() {
 	}()
 	cfg, wd := cli.ParseFlags()
 	if cfg.Version {
-		fmt.Println(cli.Version)
+		fmt.Println(version)
 		return
 	}
 	debug.Set(cfg.Debug)
