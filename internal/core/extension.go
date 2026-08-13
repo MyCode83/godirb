@@ -77,11 +77,11 @@ func (c *Core) processExtensions(
 			Size:   length,
 			Status: statusCode,
 
-			Method: response.Method.String(),
-			ContentType: response.ContentType,
+			Method:        response.Method.String(),
+			ContentType:   response.ContentType,
 			ContentLength: response.ContentLenght,
-			Location: response.Location,
-			Duration: response.Duration.String(),
+			Location:      response.Location,
+			Duration:      response.Duration.String(),
 		}
 	}
 

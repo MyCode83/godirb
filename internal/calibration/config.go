@@ -27,7 +27,7 @@ type Options struct {
 }
 
 type entry struct {
-	BaseURL 	string
+	BaseURL     string
 	Placeholder string
-	Calibration	*Calibration
+	Calibration *Calibration
 }

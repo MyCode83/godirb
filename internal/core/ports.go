@@ -119,7 +119,7 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 							Status: status,
 							Error:  err.Error(),
 
-							Method: response.Method.String(),
+							Method:   response.Method.String(),
 							Duration: response.Duration.String(),
 						}
 					}
@@ -139,11 +139,11 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 					Status: status,
 					URL:    fullURL,
 
-					Method: response.Method.String(),
-					ContentType: response.ContentType,
+					Method:        response.Method.String(),
+					ContentType:   response.ContentType,
 					ContentLength: response.ContentLenght,
-					Location: response.Location,
-					Duration: response.Duration.String(),
+					Location:      response.Location,
+					Duration:      response.Duration.String(),
 				}
 
 			}(word)

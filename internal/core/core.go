@@ -46,7 +46,6 @@ type Core struct {
 	Quiet       bool
 	Debug       bool
 
-
 	// Concurrency
 	Limiter  chan struct{}
 	DirsChan chan DirTask
