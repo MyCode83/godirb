@@ -59,9 +59,9 @@ func TestRunFuzzProcessesExtensionsBeforeFilteringBaseCalibration(t *testing.T) 
 	}
 	buildFuzzExtensionCalibrations(t, c, server.URL+"/"+c.Placeholder)
 
-	got := collectResults(c.RunFuzz(server.URL + "/" + c.Placeholder))
-	want := []Result{{
-		Prefix: prefix,
+	got := resultSummaries(collectResults(c.RunFuzz(server.URL + "/" + c.Placeholder)))
+	want := []resultSummary{{
+		Kind:   prefix,
 		URL:    server.URL + "/asset.php",
 		Size:   len("found"),
 		Status: http.StatusOK,

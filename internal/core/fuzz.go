@@ -1,15 +1,16 @@
 package core
 
 import (
-	"github.com/MyCode83/godirb/internal/debug"
-	"github.com/MyCode83/godirb/internal/transport"
-	"github.com/MyCode83/godirb/internal/calibration"
-	"github.com/MyCode83/godirb/pkg/random"
 	"slices"
 	"strings"
+
+	"github.com/MyCode83/godirb/internal/calibration"
+	"github.com/MyCode83/godirb/internal/debug"
+	"github.com/MyCode83/godirb/internal/transport"
+	"github.com/MyCode83/godirb/pkg/random"
 )
 
-const prefix = "+"
+var prefix = "UNKNOWN"
 
 func (c *Core) RunFuzz(baseURL string) <-chan Result {
 	results := make(chan Result)
@@ -112,7 +113,7 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 							if !strings.HasPrefix(ext, ".") {
 								ext = "." + ext
 							}
-							
+
 							return urlParts[0] + ExtPlaceholder + ext + urlParts[1]
 						},
 					)
@@ -133,7 +134,7 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 					return
 				}
 				results <- Result{
-					Prefix: prefix,
+					Kind:   prefix,
 					URL:    fullURL,
 					Size:   lenght,
 					Status: status,

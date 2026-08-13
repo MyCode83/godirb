@@ -1,6 +1,10 @@
 package transport
 
-import "github.com/valyala/fasthttp"
+import (
+	"time"
+
+	"github.com/valyala/fasthttp"
+)
 
 type Client struct {
 	raw *fasthttp.Client
@@ -32,7 +36,11 @@ func (c *Client) Do(opts *RequestOptions) (Response, error) {
 		}
 	}
 
+	start := time.Now()
+
 	err := c.raw.Do(req, resp)
+	finished := time.Since(start)
+
 	if err != nil {
 		return Response{}, err
 	}
@@ -50,5 +58,7 @@ func (c *Client) Do(opts *RequestOptions) (Response, error) {
 		Location:      string(resp.Header.Peek("Location")),
 
 		Body: body,
+
+		Duration: finished,
 	}, err
 }

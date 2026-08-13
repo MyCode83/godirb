@@ -1,5 +1,7 @@
 package transport
 
+import "time"
+
 type Response struct {
 	URL    string
 	Method Method
@@ -12,4 +14,6 @@ type Response struct {
 	Location    string
 
 	Body []byte
+
+	Duration time.Duration
 }

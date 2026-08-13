@@ -70,9 +70,9 @@ func TestProcessExtensionsEmitsOnlyUnfilteredResults(t *testing.T) {
 		t.Fatal("processExtensions returned false, want true")
 	}
 
-	got := drainResults(results)
-	want := []Result{{
-		Prefix: "FILE",
+	got := resultSummaries(drainResults(results))
+	want := []resultSummary{{
+		Kind:   "FILE",
 		URL:    server.URL + "/asset.txt",
 		Size:   len("found"),
 		Status: http.StatusOK,
@@ -243,13 +243,13 @@ func TestProcessExtensionsUsesIndependentCalibrations(t *testing.T) {
 		t.Fatal("processExtensions returned false, want true")
 	}
 
-	want := []Result{{
-		Prefix: "FILE",
+	want := []resultSummary{{
+		Kind:   "FILE",
 		URL:    server.URL + "/asset.two",
 		Size:   len("real-two"),
 		Status: http.StatusOK,
 	}}
-	if got := drainResults(results); !reflect.DeepEqual(got, want) {
+	if got := resultSummaries(drainResults(results)); !reflect.DeepEqual(got, want) {
 		t.Fatalf("results = %#v, want %#v", got, want)
 	}
 }

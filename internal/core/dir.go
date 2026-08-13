@@ -40,10 +40,10 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 			cal, ok := calibration.Get(dir, "")
 			if !ok {
 				err := calibration.Build(c.Client, calibration.Options{
-						BaseURL:     dir,
-						Placeholder: "",
-						Tries:       3,
-						UserAgents:  c.UserAgents,
+					BaseURL:     dir,
+					Placeholder: "",
+					Tries:       3,
+					UserAgents:  c.UserAgents,
 				})
 				if err != nil {
 					debug.Error("dir calibration build", err)
@@ -106,7 +106,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					default:
 
 					}
-					fullURL:= urlutil.JoinPath(dir, word)
+					fullURL := urlutil.JoinPath(dir, word)
 					headers := c.Header
 					if c.AuthHeader != "" {
 						headers = append(append([]string{}, headers...), "Authorization: "+c.AuthHeader)
@@ -205,11 +205,11 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 
 							if c.Recursive && (c.Depth < 0 || task.Depth < c.Depth) {
 								err := calibration.Build(c.Client, calibration.Options{
-									BaseURL: fullURL,
+									BaseURL:     fullURL,
 									Placeholder: "",
-									Tries: 3,
-									UserAgents: c.UserAgents,
-								})			
+									Tries:       3,
+									UserAgents:  c.UserAgents,
+								})
 								if err != nil {
 									debug.Error("recursive calibration build", err)
 									break
@@ -224,7 +224,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						case dirDetection.IsFile:
 							dirPrefix = "FILE"
 						default:
-							dirPrefix = "Unknown"
+							dirPrefix = "UNKNOWN"
 						}
 						debug.Printf("dir detection classification url=%s prefix=%s", fullURL, dirPrefix)
 					} else {
@@ -232,10 +232,17 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					}
 
 					results <- Result{
-						Prefix: dirPrefix,
+						Kind:   dirPrefix,
 						Size:   lenght,
 						Status: status,
-						URL:    fullURL,
+
+						Method:        response.Method.String(),
+						ContentType:   response.ContentType,
+						ContentLength: response.ContentLenght,
+						Location:      response.Location,
+						Duration:      response.Duration.String(),
+
+						URL: fullURL,
 					}
 
 				}(word, cal)

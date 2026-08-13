@@ -12,28 +12,39 @@ import (
 var mu sync.Mutex
 
 func Print(result core.Result, quiet bool) {
+	var line string
+
 	if quiet {
-		fmt.Println(output.FormatTextResult(result, quiet))
-
+		line = output.FormatTextResult(result, true)
 	} else {
-
-		isFile := strings.Contains(result.Prefix, "FILE")
-		switch isFile {
-		case true:
-			mu.Lock()
-			File.Printf("[%s] %s ---> %d | %d\n", result.Prefix, result.URL, result.Status, result.Size)
-			mu.Unlock()
-		default:
-			if strings.TrimSpace(result.Extra) != "" {
-				mu.Lock()
-				Other.Println(output.FormatTextResult(result, quiet))
-				mu.Unlock()
-			} else {
-				mu.Lock()
-				Other.Println(output.FormatTextResult(result, quiet))
-				mu.Unlock()
-			}
-		}
-
+		line = renderResult(result)
 	}
+
+	mu.Lock()
+	fmt.Println(line)
+	mu.Unlock()
+}
+
+func renderResult(result core.Result) string {
+	kind := infoStyle.Render(
+		fmt.Sprintf("%-7s", strings.ToUpper(result.Kind)),
+	)
+
+	status := statusStyle(result.Status).Render(
+		fmt.Sprintf("%3d", result.Status),
+	)
+
+	size := infoStyle.Render(
+		fmt.Sprintf("%8d B", result.Size),
+	)
+
+	url := urlStyle.Render(result.URL)
+
+	line := fmt.Sprintf("%s  %s  %s  %s", kind, status, size, url)
+
+	if extra := strings.TrimSpace(result.Error); extra != "" {
+		line += "  " + infoStyle.Render(extra)
+	}
+
+	return line
 }
