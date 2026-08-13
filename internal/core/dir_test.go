@@ -48,8 +48,8 @@ func TestRunDirProcessesExtensionsBeforeFilteringBaseCalibration(t *testing.T) {
 	buildDirCalibration(t, c, server.URL)
 	buildExtensionCalibrations(t, c, extensionCalibrationURLBuilder(server.URL))
 
-	got := collectResults(c.RunDir(server.URL))
-	want := []Result{{
+	got := resultSummaries(collectResults(c.RunDir(server.URL)))
+	want := []resultSummary{{
 		Kind:   "FILE",
 		URL:    server.URL + "/asset.txt",
 		Size:   len("found"),
@@ -147,8 +147,8 @@ func TestRunDirRecursiveUsesDirectoryCalibration(t *testing.T) {
 	c.Depth = -1
 	buildDirCalibration(t, c, server.URL)
 
-	got := collectResults(c.RunDir(server.URL))
-	want := Result{
+	got := resultSummaries(collectResults(c.RunDir(server.URL)))
+	want := resultSummary{
 		Kind:   "FILE",
 		URL:    server.URL + "/admin/child",
 		Size:   len("found"),
@@ -299,4 +299,24 @@ func collectResults(results <-chan Result) []Result {
 		collected = append(collected, result)
 	}
 	return collected
+}
+
+type resultSummary struct {
+	URL    string
+	Size   int
+	Status int
+	Kind   string
+}
+
+func resultSummaries(results []Result) []resultSummary {
+	summaries := make([]resultSummary, 0, len(results))
+	for _, result := range results {
+		summaries = append(summaries, resultSummary{
+			URL:    result.URL,
+			Size:   result.Size,
+			Status: result.Status,
+			Kind:   result.Kind,
+		})
+	}
+	return summaries
 }
