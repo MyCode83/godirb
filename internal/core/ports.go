@@ -1,17 +1,17 @@
 package core
 
 import (
-	"fmt"
 	"errors"
 	"net"
 
 	// "github.com/MyCode83/godirb/internal/assemble"
 
+	"slices"
+	"strings"
+
 	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/pkg/random"
-	"slices"
-	"strings"
 )
 
 func looksLikeOpenService(err error) bool {
@@ -114,10 +114,13 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 					debug.Error("ports", err)
 					if looksLikeOpenService(err) {
 						results <- Result{
-							Prefix: "?",
+							Kind:   "UNKNOWN",
 							URL:    fullURL,
 							Status: status,
-							Extra:  fmt.Sprintf("(error: %v)", err),
+							Error:  err.Error(),
+
+							Method: response.Method.String(),
+							Duration: response.Duration.String(),
 						}
 					}
 					return
@@ -131,10 +134,16 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 					return
 				}
 				results <- Result{
-					Prefix: prefix,
+					Kind:   prefix,
 					Size:   lenght,
 					Status: status,
 					URL:    fullURL,
+
+					Method: response.Method.String(),
+					ContentType: response.ContentType,
+					ContentLength: response.ContentLenght,
+					Location: response.Location,
+					Duration: response.Duration.String(),
 				}
 
 			}(word)

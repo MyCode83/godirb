@@ -2,11 +2,11 @@ package core
 
 import (
 	"context"
-	"github.com/MyCode83/godirb/internal/calibration"
-	"github.com/MyCode83/godirb/internal/transport"
-	"github.com/fatih/color"
 	"sync"
 	"time"
+
+	"github.com/MyCode83/godirb/internal/calibration"
+	"github.com/MyCode83/godirb/internal/transport"
 )
 
 type Mode int
@@ -46,9 +46,6 @@ type Core struct {
 	Quiet       bool
 	Debug       bool
 
-	// Colors
-	Others *color.Color
-	File   *color.Color
 
 	// Concurrency
 	Limiter  chan struct{}

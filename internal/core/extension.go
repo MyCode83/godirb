@@ -72,10 +72,16 @@ func (c *Core) processExtensions(
 		}
 
 		results <- Result{
-			Prefix: prefix,
+			Kind:   prefix,
 			URL:    urlWithExt,
 			Size:   length,
 			Status: statusCode,
+
+			Method: response.Method.String(),
+			ContentType: response.ContentType,
+			ContentLength: response.ContentLenght,
+			Location: response.Location,
+			Duration: response.Duration.String(),
 		}
 	}
 

@@ -72,7 +72,7 @@ func TestProcessExtensionsEmitsOnlyUnfilteredResults(t *testing.T) {
 
 	got := drainResults(results)
 	want := []Result{{
-		Prefix: "FILE",
+		Kind:   "FILE",
 		URL:    server.URL + "/asset.txt",
 		Size:   len("found"),
 		Status: http.StatusOK,
@@ -244,7 +244,7 @@ func TestProcessExtensionsUsesIndependentCalibrations(t *testing.T) {
 	}
 
 	want := []Result{{
-		Prefix: "FILE",
+		Kind:   "FILE",
 		URL:    server.URL + "/asset.two",
 		Size:   len("real-two"),
 		Status: http.StatusOK,

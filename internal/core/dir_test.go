@@ -50,7 +50,7 @@ func TestRunDirProcessesExtensionsBeforeFilteringBaseCalibration(t *testing.T) {
 
 	got := collectResults(c.RunDir(server.URL))
 	want := []Result{{
-		Prefix: "FILE",
+		Kind:   "FILE",
 		URL:    server.URL + "/asset.txt",
 		Size:   len("found"),
 		Status: http.StatusOK,
@@ -149,7 +149,7 @@ func TestRunDirRecursiveUsesDirectoryCalibration(t *testing.T) {
 
 	got := collectResults(c.RunDir(server.URL))
 	want := Result{
-		Prefix: "FILE",
+		Kind:   "FILE",
 		URL:    server.URL + "/admin/child",
 		Size:   len("found"),
 		Status: http.StatusOK,
