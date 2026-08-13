@@ -8,9 +8,10 @@ import (
 
 	"time"
 
-	"github.com/MyCode83/godirb/pkg/random"
 	"os"
 	"os/signal"
+
+	"github.com/MyCode83/godirb/pkg/random"
 
 	"sync"
 	"syscall"
@@ -33,7 +34,8 @@ import (
 
 	"github.com/MyCode83/godirb/internal/tui"
 
-	"github.com/fatih/color"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 )
 
 const banner string = (`		                     
@@ -62,7 +64,7 @@ func main() {
 	log.SetOutput(os.Stderr)
 	_, ok := os.LookupEnv("GODIRB_NO_COLOR")
 	if ok {
-		color.NoColor = true
+		lipgloss.SetColorProfile(termenv.Ascii)
 	}
 
 	contextCancel, cancel = context.WithCancel(context.Background())
@@ -119,7 +121,6 @@ func main() {
 			cfg.Timeout = time.Duration(500) * time.Millisecond
 			debug.Printf("port mode without explicit timeout; using %s", cfg.Timeout)
 		}
-		log.Printf(": %s\n", wd.Wordlist)
 		switch {
 		case cfg.Timeout > time.Second:
 			fmt.Fprintf(os.Stderr, "[!] High timeout (%s). Scan may be slow.\n", cfg.Timeout)
@@ -220,10 +221,6 @@ func main() {
 
 		// State
 		VisitedDirs: make(map[string]bool),
-
-		// Output / colors
-		Others: tui.Other,
-		File:   tui.File,
 	}
 	// Calibration
 	if mode == core.ModeDir || mode == core.ModeFuzz {
@@ -247,12 +244,12 @@ func main() {
 		}
 
 		cal, ok := calibration.Get(cfg.BaseURL, calibrationPlaceholder)
-		
+
 		if !ok {
 			err := fmt.Errorf(
-			"calibration not found after build: base_url=%q placeholder=%q",
-			cfg.BaseURL,
-			calibrationPlaceholder,
+				"calibration not found after build: base_url=%q placeholder=%q",
+				cfg.BaseURL,
+				calibrationPlaceholder,
 			)
 			debug.Error("calibration get", err)
 			fmt.Fprintln(os.Stderr, err)
@@ -300,7 +297,7 @@ func main() {
 
 	var outputErr error
 	for result := range engine.Run(cfg.BaseURL) {
-		debug.Printf("result prefix=%s status=%d size=%d url=%s extra=%q", result.Prefix, result.Status, result.Size, result.URL, result.Extra)
+		debug.Printf("result prefix=%s status=%d size=%d url=%s extra=%q", result.Kind, result.Status, result.Size, result.URL, result.Error)
 		if streamOutput {
 			if outputErr != nil {
 				continue

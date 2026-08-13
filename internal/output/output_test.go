@@ -13,7 +13,7 @@ import (
 
 func TestFormatTextResult(t *testing.T) {
 	result := core.Result{
-		Prefix: "DIR",
+		Kind:   "DIR",
 		URL:    "http://example.test/admin",
 		Status: 200,
 		Size:   123,
@@ -36,13 +36,13 @@ func TestWriteJSON(t *testing.T) {
 	var buf bytes.Buffer
 	results := []core.Result{
 		{
-			Prefix: "DIR",
+			Kind:   "DIR",
 			URL:    "http://example.test/admin",
 			Status: 200,
 			Size:   123,
 		},
 		{
-			Prefix: "DIR",
+			Kind:   "DIR",
 			URL:    "http://example.test/login",
 			Status: 301,
 			Size:   456,
@@ -70,7 +70,7 @@ func TestWriteJSON(t *testing.T) {
 
 func TestStreamJSONWritesLineBeforeClose(t *testing.T) {
 	result := core.Result{
-		Prefix: "DIR",
+		Kind:   "DIR",
 		URL:    "http://example.test/admin",
 		Status: 200,
 		Size:   123,
@@ -103,7 +103,7 @@ func TestStreamJSONWritesLineBeforeClose(t *testing.T) {
 func TestWriteCSV(t *testing.T) {
 	var buf bytes.Buffer
 	results := []core.Result{{
-		Prefix: "DIR",
+		Kind:   "DIR",
 		URL:    "http://example.test/admin",
 		Status: 200,
 		Size:   123,
@@ -113,7 +113,7 @@ func TestWriteCSV(t *testing.T) {
 		t.Fatalf("writeCSV() error = %v", err)
 	}
 
-	want := "prefix,url,status,size,extra\nDIR,http://example.test/admin,200,123,\n"
+	want := "url,size,status_code,method,content_type,content_length,location,duration,kind,error\nhttp://example.test/admin,123,200,,,0,,,DIR,\n"
 	got := strings.ReplaceAll(buf.String(), "\r\n", "\n")
 	if got != want {
 		t.Fatalf("writeCSV() = %q, want %q", got, want)
@@ -122,7 +122,7 @@ func TestWriteCSV(t *testing.T) {
 
 func TestStreamCSVWritesHeaderAndRowsBeforeClose(t *testing.T) {
 	result := core.Result{
-		Prefix: "DIR",
+		Kind:   "DIR",
 		URL:    "http://example.test/admin",
 		Status: 200,
 		Size:   123,
@@ -140,7 +140,7 @@ func TestStreamCSVWritesHeaderAndRowsBeforeClose(t *testing.T) {
 		t.Fatalf("ReadFile() error = %v", err)
 	}
 	got := strings.ReplaceAll(string(data), "\r\n", "\n")
-	if got != "prefix,url,status,size,extra\n" {
+	if got != "url,size,status_code,method,content_type,content_length,location,duration,kind,error\n" {
 		t.Fatalf("CSV header before close = %q", got)
 	}
 
@@ -153,7 +153,7 @@ func TestStreamCSVWritesHeaderAndRowsBeforeClose(t *testing.T) {
 		t.Fatalf("ReadFile() error = %v", err)
 	}
 	got = strings.ReplaceAll(string(data), "\r\n", "\n")
-	want := "prefix,url,status,size,extra\nDIR,http://example.test/admin,200,123,\n"
+	want := "url,size,status_code,method,content_type,content_length,location,duration,kind,error\nhttp://example.test/admin,123,200,,,0,,,DIR,\n"
 	if got != want {
 		t.Fatalf("CSV before close = %q, want %q", got, want)
 	}

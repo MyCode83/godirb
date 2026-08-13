@@ -36,7 +36,7 @@ FLAGS:
 	-u   --url string           Target URL (e.g. http://localhost)
 	-U   --user string          Username for Basic Auth
 	     --version              Print version and exit
-	-w   --wordlist string      Embedded wordlist name or path to custom wordlist (default: medium)
+	-w   --wordlist string      Embedded wordlist name, path, or - for stdin (default: medium)
 	-x   --ext slice            File extensions to append (comma-separated)
 	     --force-head           Skip HEAD/SWITCH wildcard confirmation
 	     --force-proxy          Skip proxy confirmation
@@ -44,7 +44,6 @@ FLAGS:
 
 EMBEDDED WORDLISTS:
 	small	
-	common
 	medium
 	big
 	ports
@@ -55,6 +54,8 @@ EMBEDDED WORDLISTS:
 EXAMPLES:
 	godirb -u http://localhost
 	godirb -u http://localhost -t 5 -a BOT/1.1
+	godirb -u https://example.com --json -o results.json
+	godirb -u https://example.com:FUZZ --csv -o ports.csv
 
 	godirb -u http://localhost:FUZZ
 	godirb -u "http://localhost?msg=FUZZ" -w xss

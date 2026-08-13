@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -161,10 +161,10 @@ func FormatTextResult(result core.Result, quiet bool) string {
 	if quiet {
 		return fmt.Sprintf("%d %s %d", result.Status, result.URL, result.Size)
 	}
-	if strings.TrimSpace(result.Extra) != "" {
-		return fmt.Sprintf("[%s] %s ---> %d %s | %d", result.Prefix, result.URL, result.Status, result.Extra, result.Size)
+	if strings.TrimSpace(result.Error) != "" {
+		return fmt.Sprintf("[%s] %s ---> %d %s | %d", result.Kind, result.URL, result.Status, result.Error, result.Size)
 	}
-	return fmt.Sprintf("[%s] %s ---> %d | %d", result.Prefix, result.URL, result.Status, result.Size)
+	return fmt.Sprintf("[%s] %s ---> %d | %d", result.Kind, result.URL, result.Status, result.Size)
 }
 
 func writeCSV(writer io.Writer, results []core.Result) error {
@@ -182,15 +182,44 @@ func writeCSV(writer io.Writer, results []core.Result) error {
 }
 
 func csvHeader() []string {
-	return []string{"prefix", "url", "status", "size", "extra"}
+	return csvValues(core.Result{}, func(field reflect.StructField, _ reflect.Value) string {
+		if name := csvFieldName(field); name != "" {
+			return name
+		}
+		return field.Name
+	})
 }
 
 func csvRecord(result core.Result) []string {
-	return []string{
-		result.Prefix,
-		result.URL,
-		strconv.Itoa(result.Status),
-		strconv.Itoa(result.Size),
-		result.Extra,
+	return csvValues(result, func(_ reflect.StructField, value reflect.Value) string {
+		return fmt.Sprint(value.Interface())
+	})
+}
+
+func csvValues(result core.Result, valueFor func(reflect.StructField, reflect.Value) string) []string {
+	resultType := reflect.TypeOf(result)
+	resultValue := reflect.ValueOf(result)
+	values := make([]string, 0, resultType.NumField())
+
+	for i := 0; i < resultType.NumField(); i++ {
+		field := resultType.Field(i)
+		if !field.IsExported() || csvFieldName(field) == "-" {
+			continue
+		}
+		values = append(values, valueFor(field, resultValue.Field(i)))
 	}
+
+	return values
+}
+
+func csvFieldName(field reflect.StructField) string {
+	if name := tagName(field.Tag.Get("csv")); name != "" {
+		return name
+	}
+	return tagName(field.Tag.Get("json"))
+}
+
+func tagName(tag string) string {
+	name, _, _ := strings.Cut(tag, ",")
+	return name
 }

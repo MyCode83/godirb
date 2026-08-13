@@ -65,7 +65,7 @@ func Build(client *transport.Client, opts Options) error {
 	calibration := buildSignature(samples)
 
 	entries = append(entries, entry{
-		BaseURL: opts.BaseURL,
+		BaseURL:     opts.BaseURL,
 		Placeholder: opts.Placeholder,
 		Calibration: calibration,
 	},
