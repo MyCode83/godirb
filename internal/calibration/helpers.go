@@ -1,6 +1,8 @@
 package calibration
 
 import (
+	"net/url"
+
 	"github.com/MyCode83/godirb/internal/urlutil"
 	"github.com/MyCode83/godirb/pkg/maths"
 	"github.com/MyCode83/godirb/pkg/random"
@@ -9,8 +11,8 @@ import (
 	"strings"
 )
 
-func generateURL(BaseURL, placeholder string) (string, error) {
-	randomText := random.RandomString(12)
+func generateURL(BaseURL, placeholder string, randomLength int) (string, error) {
+	randomText := random.RandomString(randomLength)
 
 	if placeholder != "" {
 		parts := strings.Split(BaseURL, placeholder)
@@ -33,10 +35,12 @@ func buildSignature(samples []Sample) *Calibration {
 	length := samples[0].Length
 
 	lengths := make([]int, 0, len(samples))
+	adjustedLengths := make([]int, 0, len(samples))
 	stable := true
 
 	for _, sample := range samples {
 		lengths = append(lengths, sample.Length)
+		adjustedLengths = append(adjustedLengths, sample.Length-sample.PathLength)
 
 		if sample.Status != status {
 			stable = false
@@ -49,12 +53,37 @@ func buildSignature(samples []Sample) *Calibration {
 		tolerance = 5
 	}
 
+	adjustedMin, adjustedMax := maths.MinMax(adjustedLengths...)
+	adjustedTolerance := adjustedMax - adjustedMin
+	if adjustedTolerance <= 0 {
+		adjustedTolerance = 5
+	}
+
+	pathLengthAdjusted := stable &&
+		tolerance > 5 &&
+		adjustedTolerance <= 5 &&
+		adjustedTolerance < tolerance
+
 	return &Calibration{
 		Status:    status,
 		Length:    length,
 		Tolerance: tolerance,
-		Stable:    stable,
-		Wildcard:  stable && status != 404,
-		Samples:   samples,
+
+		PathLengthAdjusted: pathLengthAdjusted,
+		AdjustedLength:     adjustedLengths[0],
+		AdjustedTolerance:  adjustedTolerance,
+
+		Stable:   stable,
+		Wildcard: stable && status != 404,
+		Samples:  samples,
 	}
+}
+
+func decodedURLPathLength(rawURL string) int {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return 0
+	}
+
+	return len(parsed.Path)
 }

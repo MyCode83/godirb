@@ -1,5 +1,5 @@
 pycomps/
-server/
+servers/
 .vscode
 .gocache
 .gotmp

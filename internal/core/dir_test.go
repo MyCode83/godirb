@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/MyCode83/godirb/internal/calibration"
+	"github.com/MyCode83/godirb/internal/signature"
 	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/valyala/fasthttp"
 )
@@ -69,6 +70,44 @@ func TestRunDirProcessesExtensionsBeforeFilteringBaseCalibration(t *testing.T) {
 	}
 }
 
+func TestRunDirProcessesExtensionsBeforeFilteringBaseSignature(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/asset.js":
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "real js")
+		default:
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, "HTTP ERROR 404 Not Found\nSERVLET: Stapler\nPowered by Jetty:// 12.0.0\nURI: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	matcher, err := signature.New()
+	if err != nil {
+		t.Fatalf("signature.New() error = %v", err)
+	}
+
+	c := newDirTestCore([]string{"asset"})
+	c.Exts = []string{"js"}
+	c.Signatures = matcher
+	buildDirCalibration(t, c, server.URL)
+	buildExtensionCalibrations(t, c, extensionCalibrationURLBuilder(server.URL))
+
+	got := resultSummaries(collectResults(c.RunDir(server.URL)))
+	want := []resultSummary{{
+		Kind:   "FILE",
+		URL:    server.URL + "/asset.js",
+		Size:   len("real js"),
+		Status: http.StatusOK,
+	}}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("results = %#v, want %#v", got, want)
+	}
+}
+
 func TestRunDirReusesRootDirectoryCalibration(t *testing.T) {
 	var (
 		mu              sync.Mutex
@@ -105,6 +144,85 @@ func TestRunDirReusesRootDirectoryCalibration(t *testing.T) {
 
 	if len(paths) != 0 {
 		t.Fatalf("RunDir made unexpected calibration requests after root calibration was built: %#v", paths)
+	}
+}
+
+func TestRunDirFiltersKnownDefault404SignatureWithReflectedURI(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, `<!doctype html>
+<html>
+<head><title>Error 404 Not Found</title></head>
+<body>
+<h2>HTTP ERROR 404 Not Found</h2>
+<table>
+<tr><th>URI:</th><td>%s</td></tr>
+<tr><th>STATUS:</th><td>404</td></tr>
+<tr><th>MESSAGE:</th><td>Not Found</td></tr>
+<tr><th>SERVLET:</th><td>Stapler</td></tr>
+</table>
+<a href="https://eclipse.org/jetty">Powered by Jetty:// 12.0.z-SNAPSHOT</a>
+</body>
+</html>`, r.URL.Path)
+	}))
+	defer server.Close()
+
+	matcher, err := signature.New()
+	if err != nil {
+		t.Fatalf("signature.New() error = %v", err)
+	}
+
+	c := newDirTestCore([]string{"css", "longer-reflected-path"})
+	c.Signatures = matcher
+	buildDirCalibration(t, c, server.URL)
+
+	if got := collectResults(c.RunDir(server.URL)); len(got) != 0 {
+		t.Fatalf("results = %#v, want none", got)
+	}
+}
+
+func TestRunDirCalibrationFiltersReflectedPathWildcard(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/admin":
+			http.Redirect(w, r, "/admin/", http.StatusMovedPermanently)
+		case "/admin/":
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "real dir")
+		default:
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, "wildcard 404 body with reflected URI %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	c := newDirTestCore([]string{"css", "administrator", "除投票", "ים", "admin"})
+	buildDirCalibration(t, c, server.URL)
+
+	got := resultSummaries(collectResults(c.RunDir(server.URL)))
+	want := resultSummary{
+		Kind:   "DIR",
+		URL:    server.URL + "/admin",
+		Size:   len("<a href=\"/admin/\">Moved Permanently</a>.\n\n"),
+		Status: http.StatusMovedPermanently,
+	}
+	if !slices.Contains(got, want) {
+		t.Fatalf("results = %#v, want to contain %#v", got, want)
+	}
+
+	if slices.ContainsFunc(got, func(result resultSummary) bool {
+		switch result.URL {
+		case server.URL + "/css",
+			server.URL + "/administrator",
+			server.URL + "/除投票",
+			server.URL + "/ים":
+			return true
+		default:
+			return false
+		}
+	}) {
+		t.Fatalf("results = %#v, want reflected wildcard paths filtered", got)
 	}
 }
 

@@ -48,6 +48,17 @@ func (c *Client) Do(opts *RequestOptions) (Response, error) {
 	body := append([]byte(nil), resp.Body()...)
 	lenght := len(body)
 
+	headers := make(map[string]string, resp.Header.Len())
+
+	for key, value := range resp.Header.All() {
+		headers[string(key)] = string(value)
+	}
+
+	title := ""
+	if CanHaveTitleTag(string(resp.Header.ContentType())) {
+		title = ExtractTitle(body)
+	}
+
 	return Response{
 		URL:           opts.URL,
 		Method:        method,
@@ -58,6 +69,8 @@ func (c *Client) Do(opts *RequestOptions) (Response, error) {
 		Location:      string(resp.Header.Peek("Location")),
 
 		Body: body,
+		Headers: headers,
+		Title: title,
 
 		Duration: finished,
 	}, err

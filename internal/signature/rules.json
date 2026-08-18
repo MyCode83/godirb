@@ -1,0 +1,143 @@
+{
+  "services": {
+    "nginx_default_404": {
+      "http_status_code": "200-299",
+      "http_header": {
+        "Server": "nginx"
+      },
+      "http_title": "404 Not Found",
+      "http_body": [
+        "<center><h1>404 Not Found</h1></center>"
+      ]
+    },
+    "openresty_default_404": {
+      "http_status_code": "200-299",
+      "http_header": {
+        "Server": "openresty"
+      },
+      "http_title": "404 Not Found",
+      "http_body": [
+        "<center><h1>404 Not Found</h1></center>"
+      ]
+    },
+    "apache_default_404": {
+      "http_status_code": "200-299",
+      "http_header": {
+        "Server": "Apache"
+      },
+      "http_title": "404 Not Found",
+      "http_body": [
+        "The requested URL was not found on this server."
+      ]
+    },
+    "iis_default_404": {
+      "http_status_code": "200-299",
+      "http_header": {
+        "Server": "Microsoft-IIS"
+      },
+      "http_title": "404 - File or directory not found.",
+      "http_body": [
+        "The resource you are looking for might have been removed, had its name changed, or is temporarily unavailable."
+      ]
+    },
+    "tomcat_default_404": {
+      "http_status_code": "200-299",
+      "http_body_regex": [
+        "(?is)<h1>HTTP Status 404(?:[^<]*)</h1>.*Apache Tomcat/"
+      ]
+    },
+    "jetty_default_404": {
+      "http_status_code": "200-299",
+      "http_header": {
+        "Server": "Jetty"
+      },
+      "http_body": [
+        "Powered by Jetty://"
+      ],
+      "http_body_regex": [
+        "(?i)HTTP ERROR 404"
+      ]
+    },
+    "caddy_default_404": {
+      "http_status_code": "200-299",
+      "http_header": {
+        "Server": "Caddy"
+      },
+      "http_body": [
+        "404 page not found"
+      ]
+    },
+    "lighttpd_default_404": {
+      "http_status_code": "200-299",
+      "http_header": {
+        "Server": "lighttpd"
+      },
+      "http_title": "404 - Not Found",
+      "http_body": [
+        "<h1>404 - Not Found</h1>"
+      ]
+    },
+    "jenkins_default_404": {
+      "http_status_code": "200-299",
+      "http_body": [
+        "SERVLET:",
+        "Stapler",
+        "Powered by Jetty://"
+      ],
+      "http_body_regex": [
+        "(?i)HTTP ERROR 404"
+      ]
+    },
+    "joomla_default_404": {
+      "http_status_code": "200-299",
+      "http_body": [
+        "The requested page can't be found.",
+        "Joomla!"
+      ]
+    },
+    "amazon_s3_no_such_key": {
+      "http_status_code": "200-299",
+      "http_header": {
+        "Server": "AmazonS3"
+      },
+      "http_body": [
+        "<Code>NoSuchKey</Code>",
+        "<Message>The specified key does not exist.</Message>"
+      ]
+    },
+    "azure_blob_not_found": {
+      "http_status_code": "200-299",
+      "http_header": {
+        "Server": "Windows-Azure-Blob"
+      },
+      "http_body": [
+        "<Code>BlobNotFound</Code>"
+      ]
+    },
+    "google_cloud_storage_no_such_key": {
+      "http_status_code": "200-299",
+      "http_header": {
+        "Server": "UploadServer"
+      },
+      "http_body": [
+        "<Code>NoSuchKey</Code>",
+        "<Message>The specified key does not exist.</Message>"
+      ]
+    },
+    "github_pages_site_not_found": {
+      "http_status_code": "200-299",
+      "http_header": {
+        "Server": "GitHub.com"
+      },
+      "http_body": [
+        "There isn't a GitHub Pages site here"
+      ]
+    },
+    "fastly_unknown_domain": {
+      "http_status_code": "200-299",
+      "http_body": [
+        "Fastly error: unknown domain:"
+      ]
+    }
+  }
+}

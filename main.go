@@ -27,6 +27,7 @@ import (
 	"github.com/MyCode83/godirb/internal/core" // core
 	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/output"
+	"github.com/MyCode83/godirb/internal/signature"
 	"github.com/MyCode83/godirb/internal/transport"
 	"github.com/MyCode83/godirb/internal/validate"
 
@@ -48,8 +49,6 @@ const banner string = (`
 
 var (
 	wg           sync.WaitGroup
-	tasksWG      sync.WaitGroup
-	visitedMutex sync.Mutex
 	mode         core.Mode = core.ModeDir
 )
 
@@ -222,6 +221,15 @@ func main() {
 		// State
 		VisitedDirs: make(map[string]bool),
 	}
+
+	signatures, err := signature.New()
+	if err != nil {
+		debug.Error("signature matcher", err)
+		fmt.Fprintf(os.Stderr, "[X] Error loading response signatures: %v\n", err)
+		os.Exit(2)
+	}
+	engine.Signatures = signatures
+
 	// Calibration
 	if mode == core.ModeDir || mode == core.ModeFuzz {
 		debug.Printf("building calibration")

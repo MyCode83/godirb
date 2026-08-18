@@ -2,6 +2,7 @@ package output
 
 import (
 	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -113,10 +114,13 @@ func TestWriteCSV(t *testing.T) {
 		t.Fatalf("writeCSV() error = %v", err)
 	}
 
-	want := "url,size,status_code,method,content_type,content_length,location,duration,kind,error\nhttp://example.test/admin,123,200,,,0,,,DIR,\n"
-	got := strings.ReplaceAll(buf.String(), "\r\n", "\n")
-	if got != want {
-		t.Fatalf("writeCSV() = %q, want %q", got, want)
+	records := parseCSV(t, buf.String())
+	want := [][]string{
+		csvHeader(),
+		csvRecord(results[0]),
+	}
+	if !equalCSV(records, want) {
+		t.Fatalf("writeCSV() = %#v, want %#v", records, want)
 	}
 }
 
@@ -139,9 +143,9 @@ func TestStreamCSVWritesHeaderAndRowsBeforeClose(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadFile() error = %v", err)
 	}
-	got := strings.ReplaceAll(string(data), "\r\n", "\n")
-	if got != "url,size,status_code,method,content_type,content_length,location,duration,kind,error\n" {
-		t.Fatalf("CSV header before close = %q", got)
+	records := parseCSV(t, string(data))
+	if !equalCSV(records, [][]string{csvHeader()}) {
+		t.Fatalf("CSV header before close = %#v, want %#v", records, [][]string{csvHeader()})
 	}
 
 	if err := stream.Write(result); err != nil {
@@ -152,9 +156,39 @@ func TestStreamCSVWritesHeaderAndRowsBeforeClose(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadFile() error = %v", err)
 	}
-	got = strings.ReplaceAll(string(data), "\r\n", "\n")
-	want := "url,size,status_code,method,content_type,content_length,location,duration,kind,error\nhttp://example.test/admin,123,200,,,0,,,DIR,\n"
-	if got != want {
-		t.Fatalf("CSV before close = %q, want %q", got, want)
+	records = parseCSV(t, string(data))
+	want := [][]string{
+		csvHeader(),
+		csvRecord(result),
 	}
+	if !equalCSV(records, want) {
+		t.Fatalf("CSV before close = %#v, want %#v", records, want)
+	}
+}
+
+func parseCSV(t *testing.T, data string) [][]string {
+	t.Helper()
+
+	records, err := csv.NewReader(strings.NewReader(data)).ReadAll()
+	if err != nil {
+		t.Fatalf("parse CSV %q: %v", data, err)
+	}
+	return records
+}
+
+func equalCSV(a, b [][]string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if len(a[i]) != len(b[i]) {
+			return false
+		}
+		for j := range a[i] {
+			if a[i][j] != b[i][j] {
+				return false
+			}
+		}
+	}
+	return true
 }

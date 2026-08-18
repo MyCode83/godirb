@@ -12,8 +12,10 @@ type Response struct {
 
 	ContentType string
 	Location    string
+	Title 		string
 
 	Body []byte
+	Headers map[string]string
 
 	Duration time.Duration
 }
