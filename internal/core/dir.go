@@ -123,10 +123,12 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					if !c.applyDelay("dir", fullURL) {
 						return
 					}
+
 					if err != nil {
 						debug.Error("dir", err)
 						return
 					}
+
 					debug.Printf("dir response status=%d body=%d", response.StatusCode, response.Lenght)
 					status := response.StatusCode
 					lenght := response.Lenght
@@ -150,7 +152,11 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						}
 					}
 
-					if cal.Match(status, lenght) {
+					if c.hasSignature(response) {
+						return
+					}
+
+					if cal.MatchURL(status, lenght, fullURL) {
 						debug.Printf(
 							"dir filtered calibration url=%s status=%d length=%d calibration_status=%d calibration_length=%d tolerance=%d",
 							fullURL,
@@ -241,6 +247,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						ContentLength: response.ContentLenght,
 						Location:      response.Location,
 						Duration:      response.Duration.String(),
+						Title:         response.Title,
 
 						URL: fullURL,
 					}

@@ -10,6 +10,7 @@ type Result struct {
 	ContentLength int    `json:"content_length" csv:"content_length"`
 	Location      string `json:"location" csv:"location"`
 	Duration      string `json:"duration" csv:"duration"`
+	Title		  string `json:"title" csv:"title"`
 
 	Kind  string `json:"kind" csv:"kind"`
 	Error string `json:"error,omitempty" csv:"error"`

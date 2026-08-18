@@ -121,6 +121,7 @@ func (c *Core) RunPorts(baseUrl string) <-chan Result {
 
 							Method:   response.Method.String(),
 							Duration: response.Duration.String(),
+							Title: response.Title,
 						}
 					}
 					return

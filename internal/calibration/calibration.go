@@ -9,9 +9,11 @@ import (
 )
 
 const (
-	defaultTries        = 3
+	defaultTries        = 4
 	defaultRandomLength = 12
 )
+
+var calibrationRandomLengths = []int{8, defaultRandomLength, 20, 32}
 
 func Build(client *transport.Client, opts Options) error {
 	if client == nil {
@@ -31,8 +33,13 @@ func Build(client *transport.Client, opts Options) error {
 		opts.Tries,
 	)
 
-	for range opts.Tries {
-		url, err := generateURL(opts.BaseURL, opts.Placeholder)
+	for i := range opts.Tries {
+		randomLength := defaultRandomLength
+		if i < len(calibrationRandomLengths) {
+			randomLength = calibrationRandomLengths[i]
+		}
+
+		url, err := generateURL(opts.BaseURL, opts.Placeholder, randomLength)
 		if err != nil {
 			return err
 		}
@@ -56,9 +63,10 @@ func Build(client *transport.Client, opts Options) error {
 		)
 
 		samples = append(samples, Sample{
-			URL:    url,
-			Status: response.StatusCode,
-			Length: response.Lenght,
+			URL:        url,
+			Status:     response.StatusCode,
+			Length:     response.Lenght,
+			PathLength: decodedURLPathLength(url),
 		})
 	}
 
