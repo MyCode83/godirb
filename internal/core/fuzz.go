@@ -138,6 +138,13 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 					URL:    fullURL,
 					Size:   lenght,
 					Status: status,
+
+					Method: response.Method.String(),
+					ContentType: response.ContentType,
+					ContentLength: response.ContentLenght,
+					Location: response.Location,
+					Duration: response.Duration.String(),
+					Title: response.Title,
 				}
 
 			}(word)

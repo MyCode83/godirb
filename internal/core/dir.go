@@ -241,6 +241,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						ContentLength: response.ContentLenght,
 						Location:      response.Location,
 						Duration:      response.Duration.String(),
+						Title: response.Title,
 
 						URL: fullURL,
 					}

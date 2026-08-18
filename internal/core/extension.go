@@ -82,6 +82,8 @@ func (c *Core) processExtensions(
 			ContentLength: response.ContentLenght,
 			Location:      response.Location,
 			Duration:      response.Duration.String(),
+
+			Title: response.Title,
 		}
 	}
 
