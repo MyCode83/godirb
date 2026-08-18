@@ -39,6 +39,10 @@ func (c *Core) processExtensions(
 			continue
 		}
 
+		if c.hasSignature(response) {
+			continue
+		}
+
 		debug.Printf(
 			"%s response status=%d body=%d",
 			debugName,
@@ -49,7 +53,7 @@ func (c *Core) processExtensions(
 		statusCode := response.StatusCode
 		length := response.Lenght
 
-		if cal.Match(statusCode, length) {
+		if cal.MatchURL(statusCode, length, urlWithExt) {
 			debug.Printf(
 				"%s filtered calibration url=%s status=%d length=%d",
 				debugName,

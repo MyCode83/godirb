@@ -91,6 +91,7 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 					debug.Error("fuzz", err)
 					return
 				}
+
 				debug.Printf("fuzz response status=%d body=%d", response.StatusCode, response.Lenght)
 				status := response.StatusCode
 				lenght := response.Lenght
@@ -123,7 +124,11 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 					}
 				}
 
-				if c.Calibration.Match(status, lenght) {
+				if c.hasSignature(response) {
+					return
+				}
+
+				if c.Calibration.MatchURL(status, lenght, fullURL) {
 					debug.Printf("fuzz filtered calibration url=%s status=%d length=%d calibration_status=%d calibration_length=%d tolerance=%d",
 						fullURL, status, lenght, c.Calibration.Status, c.Calibration.Length, c.Calibration.Tolerance,
 					)
@@ -139,12 +144,12 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 					Size:   lenght,
 					Status: status,
 
-					Method: response.Method.String(),
-					ContentType: response.ContentType,
+					Method:        response.Method.String(),
+					ContentType:   response.ContentType,
 					ContentLength: response.ContentLenght,
-					Location: response.Location,
-					Duration: response.Duration.String(),
-					Title: response.Title,
+					Location:      response.Location,
+					Duration:      response.Duration.String(),
+					Title:         response.Title,
 				}
 
 			}(word)

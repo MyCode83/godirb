@@ -7,6 +7,7 @@ import (
 
 	"github.com/MyCode83/godirb/internal/calibration"
 	"github.com/MyCode83/godirb/internal/transport"
+	"github.com/MyCode83/godirb/internal/signature"
 )
 
 type Mode int
@@ -45,6 +46,8 @@ type Core struct {
 	Calibration *calibration.Calibration
 	Quiet       bool
 	Debug       bool
+
+	Signatures *signature.Matcher
 
 	// Concurrency
 	Limiter  chan struct{}

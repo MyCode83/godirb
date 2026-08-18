@@ -7,6 +7,10 @@ type Calibration struct {
 	Length    int
 	Tolerance int
 
+	PathLengthAdjusted bool
+	AdjustedLength     int
+	AdjustedTolerance  int
+
 	Stable   bool
 	Wildcard bool
 
@@ -14,9 +18,10 @@ type Calibration struct {
 }
 
 type Sample struct {
-	URL    string
-	Status int
-	Length int
+	URL        string
+	Status     int
+	Length     int
+	PathLength int
 }
 
 type Options struct {
