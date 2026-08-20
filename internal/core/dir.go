@@ -19,6 +19,8 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 	results := make(chan Result)
 	debug.Printf("dir run start base_url=%q recursive=%t depth=%d words=%d exts=%v", baseURL, c.Recursive, c.Depth, len(c.WL), c.Exts)
 
+	usePlaceholdersOnly := shouldUsePlaceholdersOnly(c.WL)
+
 	go func() {
 		defer close(results)
 		c.WG.Add(1)
@@ -94,7 +96,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 				word = strings.TrimLeft(word, "/")
 				c.WG.Add(1)
 				go func(word string, cal *calibration.Calibration) {
-					dirPrefix := ""
+					dirPrefix := "UNKNOWN"
 
 					defer c.WG.Done()
 
@@ -119,6 +121,20 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						Headers:    headers,
 					}
 
+					if c.hasLineExt(word) {
+						if len(c.Exts) <= 0 {
+							return
+						}
+
+						debug.Printf("extension placeholder detected word=%q url=%q", word, fullURL)
+						c.processExtPlaceholder(request, results, fullURL, "dir-ext", "UNKNOWN",
+							func(ext string) string {
+								return urlutil.AddExtension(urlutil.JoinPath(dir, ExtPlaceholder), ext)
+							},
+						)
+						return
+					}
+
 					response, err := c.Client.Do(&request)
 					if !c.applyDelay("dir", fullURL) {
 						return
@@ -133,7 +149,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					status := response.StatusCode
 					lenght := response.Lenght
 
-					if len(c.Exts) > 0 {
+					if len(c.Exts) > 0 && !usePlaceholdersOnly {
 						ok := c.processExtensions(
 							&request,
 							results,

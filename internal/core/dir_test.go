@@ -108,6 +108,56 @@ func TestRunDirProcessesExtensionsBeforeFilteringBaseSignature(t *testing.T) {
 	}
 }
 
+func TestRunDirProcessesExtPlaceholderLines(t *testing.T) {
+	var paths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		if r.URL.Path == "/asset.php" {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "found")
+			return
+		}
+		w.WriteHeader(http.StatusTeapot)
+		fmt.Fprint(w, "calibration")
+	}))
+	defer server.Close()
+
+	c := newDirTestCore([]string{"asset.%EXT%"})
+	c.Exts = []string{"php"}
+	buildDirCalibration(t, c, server.URL)
+
+	got := resultSummaries(collectResults(c.RunDir(server.URL)))
+	want := []resultSummary{{Kind: "FILE", URL: server.URL + "/asset.php", Size: len("found"), Status: http.StatusOK}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("results = %#v, want %#v", got, want)
+	}
+	if slices.Contains(paths, "/asset.%EXT%") {
+		t.Fatalf("requested literal placeholder path: %#v", paths)
+	}
+}
+
+func TestRunDirPlaceholderHeavyWordlistSkipsGlobalExtensions(t *testing.T) {
+	var paths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		w.WriteHeader(http.StatusTeapot)
+		fmt.Fprint(w, "calibration")
+	}))
+	defer server.Close()
+
+	c := newDirTestCore(append(extWords(99), "plain"))
+	c.Exts = []string{"php"}
+	buildDirCalibration(t, c, server.URL)
+	collectResults(c.RunDir(server.URL))
+
+	if slices.Contains(paths, "/plain.php") {
+		t.Fatalf("requested global extension for plain word: %#v", paths)
+	}
+	if !slices.Contains(paths, "/plain") {
+		t.Fatalf("did not request plain word: %#v", paths)
+	}
+}
+
 func TestRunDirReusesRootDirectoryCalibration(t *testing.T) {
 	var (
 		mu              sync.Mutex

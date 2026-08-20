@@ -16,6 +16,8 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 	results := make(chan Result)
 	debug.Printf("fuzz run start base_url=%q placeholder=%q words=%d exts=%v", baseURL, c.Placeholder, len(c.WL), c.Exts)
 
+	usePlaceholdersOnly := shouldUsePlaceholdersOnly(c.WL)
+
 	go func() {
 		defer close(results)
 
@@ -83,6 +85,31 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 					Headers:    headers,
 				}
 
+				if c.hasLineExt(word) {
+					if len(c.Exts) <= 0 {
+						return
+					}
+
+					debug.Printf("extension placeholder detected word=%q url=%q", word, fullURL)
+					urlParts := strings.Split(baseURL, c.Placeholder)
+
+					c.processExtPlaceholder(
+						request,
+						results,
+						fullURL,
+						"UNKNOWN",
+						"fuzz-ext",
+						func(ext string) string {
+							if !strings.HasPrefix(ext, ".") {
+								ext = "." + ext
+							}
+							return urlParts[0] + ExtPlaceholder + ext + urlParts[1]
+						},
+					)
+
+					return
+				}
+
 				response, err := c.Client.Do(&request)
 				if !c.applyDelay("fuzz", fullURL) {
 					return
@@ -96,7 +123,7 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 				status := response.StatusCode
 				lenght := response.Lenght
 
-				if len(c.Exts) > 0 {
+				if len(c.Exts) > 0 && !usePlaceholdersOnly {
 					ok := c.processExtensions(
 						&request,
 						results,
