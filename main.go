@@ -15,6 +15,8 @@ import (
 
 	"sync"
 	"syscall"
+	buildinfo "runtime/debug"
+	
 
 	// Third-libs
 	"github.com/spf13/pflag"
@@ -61,6 +63,19 @@ var (
 	cancel        context.CancelFunc
 )
 
+func currentVersion() string {
+	if version != "dev" {
+		return version
+	}
+
+	info, ok := buildinfo.ReadBuildInfo()
+	if ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+
+	return version
+}
+
 func main() {
 	log.SetOutput(os.Stderr)
 	_, ok := os.LookupEnv("GODIRB_NO_COLOR")
@@ -87,7 +102,7 @@ func main() {
 	}()
 	cfg, wd := cli.ParseFlags()
 	if cfg.Version {
-		fmt.Println(version)
+		fmt.Println(currentVersion())
 		return
 	}
 	debug.Set(cfg.Debug)
@@ -244,7 +259,6 @@ func main() {
 		err := calibration.Build(client, calibration.Options{
 			BaseURL:     cfg.BaseURL,
 			Placeholder: calibrationPlaceholder,
-			Tries:       3,
 			UserAgents:  cfg.UserAgent,
 		})
 		if err != nil {
