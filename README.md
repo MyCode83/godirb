@@ -2,7 +2,7 @@
 
 # godirb
 
-**Fast, modern recursive directory and file brute-forcer written in Go.**
+**Fast, modern directory, file, port and FUZZ brute-forcer written in Go.**
 
 Built for quick scans where you want a modern dirb-like tool: run it, get useful results, tune the obvious flags, and avoid dragging a full fuzzing framework into a simple job.
 
@@ -81,7 +81,7 @@ godirb is designed for the common case: you want to enumerate directories and fi
 - 📚 Embedded wordlists
 - 🔄 Recursive scanning
 - 📂 Directory and file discovery
-- 🎯 Wildcard detection
+- 🎯 Wildcard filtering / response calibration
 - 🌐 Port fuzzing (`http://host:FUZZ`)
 - 📄 JSON & CSV output
 - 🧩 Simple CLI
@@ -141,7 +141,7 @@ godirb intentionally focuses on the most common workflow: install, run and get u
 - Threads (`-t`, `--threads`)
 - Ignore status codes (`-i`, `--ignore`)
 - Default ignored codes: `404,400,405,408`
-- Wildcard detection
+- Wildcard filtering / response calibration
 
 ---
 
@@ -206,9 +206,9 @@ godirb -u https://example.com --csv -o results.csv
 ## 📋 Example Output
 
 ```text
-[DIR]  https://example.com/admin       ---> 200 | 1234
-[FILE] https://example.com/login.php   ---> 200 | 842
-[DIR]  https://example.com/uploads     ---> 403 | 795
+DIR       200      1234 B  https://example.com/admin
+FILE      200       842 B  https://example.com/login.php
+DIR       403       795 B  https://example.com/uploads
 ```
 
 ---
