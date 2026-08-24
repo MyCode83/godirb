@@ -8,8 +8,6 @@ import (
 	"github.com/MyCode83/godirb/internal/confirmation"
 	"github.com/MyCode83/godirb/internal/debug"
 	"github.com/MyCode83/godirb/internal/duration"
-
-	"github.com/fatih/color"
 )
 
 var (
@@ -20,10 +18,6 @@ var (
 func ValidateFlags(cfg *Config) {
 	debug.Printf("validate flags start")
 	cfg.BaseURL = strings.TrimRight(cfg.URL, "/")
-	if cfg.NoColor || cfg.Quiet {
-		useColors = false
-		debug.Printf("colors disabled no_color=%t quiet=%t", cfg.NoColor, cfg.Quiet)
-	}
 	if cfg.JSON && cfg.CSV {
 		debug.Printf("invalid output flags: json and csv both enabled")
 		fmt.Fprintln(os.Stderr, "[X] Error, use only one output format: --json or --csv")
@@ -71,9 +65,6 @@ func ValidateFlags(cfg *Config) {
 		debug.Printf("invalid depth=%d", cfg.Depth)
 		fmt.Fprintln(os.Stderr, "[X] Error: depth must be -1 or greater")
 		os.Exit(2)
-	}
-	if !useColors {
-		color.NoColor = true
 	}
 	if cfg.Timeout <= 0 {
 		debug.Printf("invalid timeout=%s", cfg.Timeout)

@@ -13,10 +13,9 @@ import (
 
 	"github.com/MyCode83/godirb/pkg/random"
 
+	buildinfo "runtime/debug"
 	"sync"
 	"syscall"
-	buildinfo "runtime/debug"
-	
 
 	// Third-libs
 	"github.com/spf13/pflag"
@@ -36,9 +35,6 @@ import (
 	"github.com/MyCode83/godirb/internal/calibration"
 
 	"github.com/MyCode83/godirb/internal/tui"
-
-	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/termenv"
 )
 
 const banner string = (`		                     
@@ -52,8 +48,8 @@ const banner string = (`
 var version = "dev"
 
 var (
-	wg           sync.WaitGroup
-	mode         core.Mode = core.ModeDir
+	wg   sync.WaitGroup
+	mode core.Mode = core.ModeDir
 )
 
 // others
@@ -78,10 +74,6 @@ func currentVersion() string {
 
 func main() {
 	log.SetOutput(os.Stderr)
-	_, ok := os.LookupEnv("GODIRB_NO_COLOR")
-	if ok {
-		lipgloss.SetColorProfile(termenv.Ascii)
-	}
 
 	contextCancel, cancel = context.WithCancel(context.Background())
 	go func() {
@@ -106,6 +98,7 @@ func main() {
 		return
 	}
 	debug.Set(cfg.Debug)
+	tui.ConfigureColor(cfg.NoColor, cfg.Quiet)
 	debug.Printf("parsed flags url=%q wordlist=%q threads=%d depth=%d timeout=%q delay=%q method=%q recursive=%t quiet=%t json=%t csv=%t output=%q",
 		cfg.URL, wd.Wordlist, cfg.Threads, cfg.Depth, cfg.RawTimeout, cfg.RawDelay, cfg.Method, cfg.Recursive, cfg.Quiet, cfg.JSON, cfg.CSV, cfg.Output)
 	cli.ValidateFlags(&cfg)
@@ -138,14 +131,14 @@ func main() {
 			debug.Printf("port mode without explicit timeout; using %s", cfg.Timeout)
 		}
 		switch {
-		case cfg.Timeout > time.Second:
-			fmt.Fprintf(os.Stderr, "[!] High timeout (%s). Scan may be slow.\n", cfg.Timeout)
 		case cfg.Timeout >= time.Duration(5)*time.Second:
 			fmt.Fprintf(os.Stderr, "[!] Very high timeout (%s). Scan will be very slow.\nCTRL + C will take a while (up to 30s).\n", cfg.Timeout)
+		case cfg.Timeout > time.Second:
+			fmt.Fprintf(os.Stderr, "[!] High timeout (%s). Scan may be slow.\n", cfg.Timeout)
 		}
 	case core.ModeDir:
 	}
-	rawClient := assemble.BuildProxyAndClient(cfg.Proxy, cfg.Timeout, cfg.Insecure)
+	rawClient := assemble.BuildProxyAndClient(cfg.Proxy, cfg.Timeout, cfg.Insecure, cfg.ForceProxy)
 	client := transport.New(rawClient)
 	debug.Printf("http client ready proxy=%t timeout=%s insecure=%t", cfg.Proxy != "", cfg.Timeout, cfg.Insecure)
 	if mode == core.ModeDir {
@@ -291,7 +284,7 @@ func main() {
 
 		if mode == core.ModeDir && cal.Wildcard {
 
-			if cfg.Method != "GET" && !cfg.ForceHead {
+			if wildcardMethodConfirmationRequired(method, methodMode) && !cfg.ForceHead {
 				fmt.Fprintf(os.Stderr, "[!] Wildcard-like behavior detected using HEAD/SWITCH requests.\n")
 				fmt.Fprintf(os.Stderr, "You can skip this confirmation with '--force-head'\n")
 				fmt.Fprintf(os.Stderr, "HEAD/SWITCH responses do not include a body, so wildcard filtering\ncannot be done reliably and may produce false positives.\n")
@@ -346,4 +339,8 @@ func main() {
 	}
 	debug.Printf("scan finished")
 
+}
+
+func wildcardMethodConfirmationRequired(method transport.Method, mode transport.MethodMode) bool {
+	return mode == transport.MethodModeSwitch || method != transport.MethodGET
 }

@@ -1,6 +1,11 @@
 package tui
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"os"
+
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
+)
 
 var (
 	infoStyle = lipgloss.NewStyle().
@@ -36,4 +41,19 @@ func statusStyle(status int) lipgloss.Style {
 	default:
 		return infoStyle
 	}
+}
+
+func ConfigureColor(noColor bool, quiet bool) {
+	if colorDisabled(noColor, quiet) {
+		lipgloss.SetColorProfile(termenv.Ascii)
+	}
+}
+
+func colorDisabled(noColor bool, quiet bool) bool {
+	return noColor || quiet || envIsSet("NO_COLOR") || envIsSet("GODIRB_NO_COLOR")
+}
+
+func envIsSet(name string) bool {
+	_, ok := os.LookupEnv(name)
+	return ok
 }

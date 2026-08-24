@@ -147,14 +147,6 @@ License: MIT
 
 Copyright (c) 2023 Charmbracelet, Inc.
 
-### github.com/fatih/color
-
-Source: https://github.com/fatih/color
-
-License: MIT
-
-Copyright (c) 2013 Fatih Arslan
-
 ### github.com/klauspost/compress
 
 Source: https://github.com/klauspost/compress

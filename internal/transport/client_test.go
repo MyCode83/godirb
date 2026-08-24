@@ -60,6 +60,66 @@ func TestDoSendsRequestWithHeaders(t *testing.T) {
 	}
 }
 
+func TestDoSendsHeaderValueContainingColon(t *testing.T) {
+	client, url, cleanup := newTestClient(t, func(ctx *fasthttp.RequestCtx) {
+		if got := string(ctx.Request.Header.Peek("Authorization")); got != "Bearer part:with:colons" {
+			t.Fatalf("Authorization header = %q, want %q", got, "Bearer part:with:colons")
+		}
+
+		ctx.SetStatusCode(fasthttp.StatusOK)
+	})
+	defer cleanup()
+
+	resp, err := client.Do(&RequestOptions{
+		URL:     url,
+		Method:  MethodGET,
+		Headers: []string{"Authorization: Bearer part:with:colons"},
+	})
+	if err != nil {
+		t.Fatalf("Do returned error: %v", err)
+	}
+	if resp.StatusCode != fasthttp.StatusOK {
+		t.Fatalf("status = %d, want %d", resp.StatusCode, fasthttp.StatusOK)
+	}
+}
+
+func TestDoRejectsInvalidHeader(t *testing.T) {
+	var req fasthttp.Request
+
+	if err := applyHeaders(&req, []string{"X-Test"}); err == nil {
+		t.Fatal("applyHeaders returned nil error for invalid header")
+	}
+}
+
+func TestDoSendsRepeatedHeaders(t *testing.T) {
+	client, url, cleanup := newTestClient(t, func(ctx *fasthttp.RequestCtx) {
+		if got := string(ctx.Request.Header.Peek("Authorization")); got != "Bearer TOKEN" {
+			t.Fatalf("Authorization header = %q, want %q", got, "Bearer TOKEN")
+		}
+		if got := string(ctx.Request.Header.Peek("X-Test")); got != "value" {
+			t.Fatalf("X-Test header = %q, want %q", got, "value")
+		}
+
+		ctx.SetStatusCode(fasthttp.StatusOK)
+	})
+	defer cleanup()
+
+	resp, err := client.Do(&RequestOptions{
+		URL:    url,
+		Method: MethodGET,
+		Headers: []string{
+			"Authorization: Bearer TOKEN",
+			"X-Test: value",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Do returned error: %v", err)
+	}
+	if resp.StatusCode != fasthttp.StatusOK {
+		t.Fatalf("status = %d, want %d", resp.StatusCode, fasthttp.StatusOK)
+	}
+}
+
 func TestDoCopiesResponseBody(t *testing.T) {
 	bodies := []string{"first", "second-body"}
 	requests := 0
