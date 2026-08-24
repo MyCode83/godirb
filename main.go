@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"time"
 
@@ -61,15 +62,15 @@ var (
 
 func currentVersion() string {
 	if version != "dev" {
-		return version
+		return strings.TrimPrefix(version, "v")
 	}
 
 	info, ok := buildinfo.ReadBuildInfo()
 	if ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
-		return info.Main.Version
+		return strings.TrimPrefix(info.Main.Version, "v")
 	}
 
-	return version
+	return strings.TrimPrefix(version, "v")
 }
 
 func main() {
