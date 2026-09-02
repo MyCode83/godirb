@@ -62,3 +62,40 @@ jobs:
             assert_match version.to_s, shell_output("#{bin}/godirb --version")
   
           debug: true
+  winget:
+    name: Update WinGet manifest
+    needs: release
+    runs-on: windows-latest
+
+    steps:
+      - name: Get version
+        id: version
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Download WingetCreate
+        shell: pwsh
+        run: |
+          Invoke-WebRequest `
+            -Uri "https://aka.ms/wingetcreate/latest" `
+            -OutFile "wingetcreate.exe"
+
+      - name: Submit WinGet PR
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+
+          $x86 = "https://github.com/MyCode83/godirb/releases/download/v$version/godirb_${version}_windows_386.zip|x86"
+          $x64 = "https://github.com/MyCode83/godirb/releases/download/v$version/godirb_${version}_windows_amd64.zip|x64"
+          $arm64 = "https://github.com/MyCode83/godirb/releases/download/v$version/godirb_${version}_windows_arm64.zip|arm64"
+
+          .\wingetcreate.exe update MyCode83.godirb `
+            --version $version `
+            --urls "$x86" "$x64" "$arm64" `
+            --submit `
+            --token $env:WINGET_TOKEN `
+            --prtitle "Automatic version update: MyCode83.godirb $version"
