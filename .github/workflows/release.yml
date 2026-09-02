@@ -129,8 +129,22 @@ jobs:
           WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
         run: |
           $version = "${{ steps.version.outputs.version }}"
-          $manifestPath = "manifests\m\MyCode83\godirb\$version"
+
+          $manifest = Get-ChildItem `
+            -Path "manifests" `
+            -Recurse `
+            -Filter "MyCode83.godirb.yaml" |
+            Where-Object { $_.DirectoryName -like "*\$version" } |
+            Select-Object -First 1
+
+          if (-not $manifest) {
+            Write-Host "Generated files:"
+            Get-ChildItem manifests -Recurse
+            throw "Could not find generated WinGet manifest for $version"
+          }
+
+          $manifestPath = $manifest.Directory.FullName
 
           .\wingetcreate.exe submit `
-            $manifestPath `
+            "$manifestPath" `
             --token $env:WINGET_TOKEN
