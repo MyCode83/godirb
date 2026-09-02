@@ -82,7 +82,7 @@ jobs:
             -Uri "https://aka.ms/wingetcreate/latest" `
             -OutFile "wingetcreate.exe"
 
-      - name: Submit WinGet PR
+      - name: Generate WinGet manifests
         shell: pwsh
         env:
           WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
@@ -96,6 +96,41 @@ jobs:
           .\wingetcreate.exe update MyCode83.godirb `
             --version $version `
             --urls "$x86" "$x64" "$arm64" `
-            --submit `
-            --token $env:WINGET_TOKEN `
-            --prtitle "Automatic version update: MyCode83.godirb $version"
+            --out manifests `
+            --token $env:WINGET_TOKEN
+
+      - name: Add ReleaseNotes
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $notes = gh release view "${{ github.ref_name }}" `
+            --repo MyCode83/godirb `
+            --json body `
+            --jq ".body"
+
+          $file = Get-ChildItem manifests -Recurse -Filter "*.locale.en-US.yaml" |
+            Select-Object -First 1
+
+          $content = Get-Content $file.FullName -Raw
+
+          $notes = (($notes -replace "`r", "") -split "`n" |
+            ForEach-Object { "  $_" }) -join "`n"
+
+          $content = $content -replace `
+            "(?m)^ReleaseNotesUrl:", `
+            "ReleaseNotes: |`n$notes`nReleaseNotesUrl:"
+
+          Set-Content $file.FullName $content -Encoding utf8
+
+      - name: Submit WinGet PR
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $manifestPath = "manifests\m\MyCode83\godirb\$version"
+
+          .\wingetcreate.exe submit `
+            $manifestPath `
+            --token $env:WINGET_TOKEN
