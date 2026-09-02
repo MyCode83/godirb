@@ -25,6 +25,7 @@ import (
 	"github.com/MyCode83/godirb/internal/assemble"
 	"github.com/MyCode83/godirb/internal/cli"
 	"github.com/MyCode83/godirb/internal/confirmation"
+	"github.com/MyCode83/godirb/internal/help"
 
 	"github.com/MyCode83/godirb/internal/core" // core
 	"github.com/MyCode83/godirb/internal/debug"
@@ -71,6 +72,13 @@ func currentVersion() string {
 	}
 
 	return strings.TrimPrefix(version, "v")
+}
+
+func init() {
+	if len(os.Args) == 1 {
+		fmt.Println(help.PrintHelp())
+		os.Exit(0)
+	}
 }
 
 func main() {
