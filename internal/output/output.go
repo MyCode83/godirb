@@ -147,16 +147,6 @@ func Write(results []core.Result, format Format, outputPath string, quiet bool) 
 	return stream.Close()
 }
 
-func writeJSON(writer io.Writer, results []core.Result) error {
-	encoder := json.NewEncoder(writer)
-	for _, result := range results {
-		if err := encoder.Encode(result); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func FormatTextResult(result core.Result, quiet bool) string {
 	if quiet {
 		return fmt.Sprintf("%d %s %d", result.Status, result.URL, result.Size)
@@ -165,20 +155,6 @@ func FormatTextResult(result core.Result, quiet bool) string {
 		return fmt.Sprintf("[%s] %s ---> %d %s | %d", result.Kind, result.URL, result.Status, result.Error, result.Size)
 	}
 	return fmt.Sprintf("[%s] %s ---> %d | %d", result.Kind, result.URL, result.Status, result.Size)
-}
-
-func writeCSV(writer io.Writer, results []core.Result) error {
-	csvWriter := csv.NewWriter(writer)
-	if err := csvWriter.Write(csvHeader()); err != nil {
-		return err
-	}
-	for _, result := range results {
-		if err := csvWriter.Write(csvRecord(result)); err != nil {
-			return err
-		}
-	}
-	csvWriter.Flush()
-	return csvWriter.Error()
 }
 
 func csvHeader() []string {
