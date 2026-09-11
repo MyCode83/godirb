@@ -6,29 +6,32 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"reflect"
 	"strings"
 	"sync"
 
 	"github.com/MyCode83/godirb/internal/core"
+	// "github.com/MyCode83/godirb/internal/ui"
 )
 
 type Format int
 
 const (
-	FormatText Format = iota
+	FormatQuiet Format = iota
+	FormatHuman
 	FormatJSON
 	FormatCSV
 )
 
-func FromFlags(jsonOutput, csvOutput bool) Format {
+func FromFlags(jsonOutput, csvOutput, quietOutput bool) Format {
 	switch {
 	case jsonOutput:
 		return FormatJSON
 	case csvOutput:
 		return FormatCSV
+	case quietOutput:
+		return FormatQuiet
 	default:
-		return FormatText
+		return FormatHuman
 	}
 }
 
@@ -39,11 +42,10 @@ type Stream struct {
 	csvWriter *csv.Writer
 	encoder   *json.Encoder
 	format    Format
-	quiet     bool
 	closed    bool
 }
 
-func NewStream(format Format, outputPath string, quiet bool) (*Stream, error) {
+func NewStream(format Format, outputPath string, noColor bool) (*Stream, error) {
 	writer := io.Writer(os.Stdout)
 	var file *os.File
 	if strings.TrimSpace(outputPath) != "" {
@@ -52,30 +54,40 @@ func NewStream(format Format, outputPath string, quiet bool) (*Stream, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		writer = file
+
+		if format == FormatHuman {
+			writer = ansiStripWriter{
+				w: file,
+			}
+		}
+	}
+
+	if noColor {
+		writer = ansiStripWriter{
+			w: writer,
+		}
 	}
 
 	stream := &Stream{
 		writer: writer,
 		file:   file,
 		format: format,
-		quiet:  quiet,
 	}
 
 	switch format {
 	case FormatJSON:
 		stream.encoder = json.NewEncoder(writer)
 	case FormatCSV:
-		stream.csvWriter = csv.NewWriter(writer)
-		if err := stream.csvWriter.Write(csvHeader()); err != nil {
+		csvWriter, err := NewCSVWriter(writer)
+
+		if err != nil {
 			stream.closeFile()
 			return nil, err
 		}
-		stream.csvWriter.Flush()
-		if err := stream.csvWriter.Error(); err != nil {
-			stream.closeFile()
-			return nil, err
-		}
+
+		stream.csvWriter = csvWriter
 	}
 
 	return stream, nil
@@ -93,14 +105,12 @@ func (s *Stream) Write(result core.Result) error {
 	case FormatJSON:
 		return s.encoder.Encode(result)
 	case FormatCSV:
-		if err := s.csvWriter.Write(csvRecord(result)); err != nil {
-			return err
-		}
-		s.csvWriter.Flush()
-		return s.csvWriter.Error()
-	default:
-		_, err := fmt.Fprintln(s.writer, FormatTextResult(result, s.quiet))
+		return WriteCSV(s.csvWriter, result)
+	case FormatQuiet:
+		_, err := fmt.Fprintf(s.writer, "%d %s %d\n", result.Status, result.URL, result.Size)
 		return err
+	default:
+		return WriteHuman(s.writer, result)
 	}
 }
 
@@ -131,68 +141,6 @@ func (s *Stream) closeFile() error {
 	err := s.file.Close()
 	s.file = nil
 	return err
-}
-
-func Write(results []core.Result, format Format, outputPath string, quiet bool) error {
-	stream, err := NewStream(format, outputPath, quiet)
-	if err != nil {
-		return err
-	}
-	for _, result := range results {
-		if err := stream.Write(result); err != nil {
-			_ = stream.Close()
-			return err
-		}
-	}
-	return stream.Close()
-}
-
-func FormatTextResult(result core.Result, quiet bool) string {
-	if quiet {
-		return fmt.Sprintf("%d %s %d", result.Status, result.URL, result.Size)
-	}
-	if strings.TrimSpace(result.Error) != "" {
-		return fmt.Sprintf("[%s] %s ---> %d %s | %d", result.Kind, result.URL, result.Status, result.Error, result.Size)
-	}
-	return fmt.Sprintf("[%s] %s ---> %d | %d", result.Kind, result.URL, result.Status, result.Size)
-}
-
-func csvHeader() []string {
-	return csvValues(core.Result{}, func(field reflect.StructField, _ reflect.Value) string {
-		if name := csvFieldName(field); name != "" {
-			return name
-		}
-		return field.Name
-	})
-}
-
-func csvRecord(result core.Result) []string {
-	return csvValues(result, func(_ reflect.StructField, value reflect.Value) string {
-		return fmt.Sprint(value.Interface())
-	})
-}
-
-func csvValues(result core.Result, valueFor func(reflect.StructField, reflect.Value) string) []string {
-	resultType := reflect.TypeOf(result)
-	resultValue := reflect.ValueOf(result)
-	values := make([]string, 0, resultType.NumField())
-
-	for i := 0; i < resultType.NumField(); i++ {
-		field := resultType.Field(i)
-		if !field.IsExported() || csvFieldName(field) == "-" {
-			continue
-		}
-		values = append(values, valueFor(field, resultValue.Field(i)))
-	}
-
-	return values
-}
-
-func csvFieldName(field reflect.StructField) string {
-	if name := tagName(field.Tag.Get("csv")); name != "" {
-		return name
-	}
-	return tagName(field.Tag.Get("json"))
 }
 
 func tagName(tag string) string {

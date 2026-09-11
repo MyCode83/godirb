@@ -14,20 +14,23 @@ import (
 
 func TestFromFlags(t *testing.T) {
 	tests := []struct {
-		name       string
-		jsonOutput bool
-		csvOutput  bool
-		want       Format
+		name        string
+		jsonOutput  bool
+		csvOutput   bool
+		quietOutput bool
+		want        Format
 	}{
-		{name: "text by default", want: FormatText},
+		{name: "human by default", want: FormatHuman},
+		{name: "quiet", quietOutput: true, want: FormatQuiet},
 		{name: "json", jsonOutput: true, want: FormatJSON},
 		{name: "csv", csvOutput: true, want: FormatCSV},
-		{name: "json wins over csv", jsonOutput: true, csvOutput: true, want: FormatJSON},
+		{name: "json wins over csv and quiet", jsonOutput: true, csvOutput: true, quietOutput: true, want: FormatJSON},
+		{name: "csv wins over quiet", csvOutput: true, quietOutput: true, want: FormatCSV},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := FromFlags(tt.jsonOutput, tt.csvOutput)
+			got := FromFlags(tt.jsonOutput, tt.csvOutput, tt.quietOutput)
 			if got != tt.want {
 				t.Fatalf("FromFlags() = %v, want %v", got, tt.want)
 			}
@@ -35,49 +38,45 @@ func TestFromFlags(t *testing.T) {
 	}
 }
 
-func TestStreamTextWritesResult(t *testing.T) {
+func TestStreamHumanWritesPlainResultToFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "results.txt")
-	result := testResult()
 
-	stream, err := NewStream(FormatText, path, false)
-	if err != nil {
-		t.Fatalf("NewStream() error = %v", err)
-	}
+	stream := newTestStream(t, FormatHuman, path, false)
+	writeTestResult(t, stream, testResult())
+	closeTestStream(t, stream)
 
-	if err := stream.Write(result); err != nil {
-		t.Fatalf("Stream.Write() error = %v", err)
-	}
-	if err := stream.Close(); err != nil {
-		t.Fatalf("Stream.Close() error = %v", err)
-	}
-
-	got := readFile(t, path)
-	want := "[DIR] http://example.test/admin ---> 200 | 123\n"
-	if got != want {
-		t.Fatalf("text stream = %q, want %q", got, want)
+	want := "DIR      200       123 B  http://example.test/admin\n"
+	if got := readFile(t, path); got != want {
+		t.Fatalf("human stream = %q, want %q", got, want)
 	}
 }
 
-func TestStreamTextQuietWritesMinimalResult(t *testing.T) {
+func TestStreamHumanIncludesError(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "results.txt")
 	result := testResult()
+	result.Status = 500
+	result.Error = "request failed"
 
-	stream, err := NewStream(FormatText, path, true)
-	if err != nil {
-		t.Fatalf("NewStream() error = %v", err)
-	}
+	stream := newTestStream(t, FormatHuman, path, false)
+	writeTestResult(t, stream, result)
+	closeTestStream(t, stream)
 
-	if err := stream.Write(result); err != nil {
-		t.Fatalf("Stream.Write() error = %v", err)
+	want := "DIR      500       123 B  http://example.test/admin  request failed\n"
+	if got := readFile(t, path); got != want {
+		t.Fatalf("human stream with error = %q, want %q", got, want)
 	}
-	if err := stream.Close(); err != nil {
-		t.Fatalf("Stream.Close() error = %v", err)
-	}
+}
 
-	got := readFile(t, path)
+func TestStreamQuietWritesMinimalResult(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "results.txt")
+
+	stream := newTestStream(t, FormatQuiet, path, false)
+	writeTestResult(t, stream, testResult())
+	closeTestStream(t, stream)
+
 	want := "200 http://example.test/admin 123\n"
-	if got != want {
-		t.Fatalf("quiet text stream = %q, want %q", got, want)
+	if got := readFile(t, path); got != want {
+		t.Fatalf("quiet stream = %q, want %q", got, want)
 	}
 }
 
@@ -85,15 +84,10 @@ func TestStreamJSONWritesLineBeforeClose(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "results.jsonl")
 	result := testResult()
 
-	stream, err := NewStream(FormatJSON, path, false)
-	if err != nil {
-		t.Fatalf("NewStream() error = %v", err)
-	}
-	defer stream.Close()
+	stream := newTestStream(t, FormatJSON, path, false)
+	defer closeTestStream(t, stream)
 
-	if err := stream.Write(result); err != nil {
-		t.Fatalf("Stream.Write() error = %v", err)
-	}
+	writeTestResult(t, stream, result)
 
 	var got core.Result
 	data := readFile(t, path)
@@ -108,11 +102,8 @@ func TestStreamJSONWritesLineBeforeClose(t *testing.T) {
 func TestStreamCSVWritesHeaderBeforeClose(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "results.csv")
 
-	stream, err := NewStream(FormatCSV, path, false)
-	if err != nil {
-		t.Fatalf("NewStream() error = %v", err)
-	}
-	defer stream.Close()
+	stream := newTestStream(t, FormatCSV, path, false)
+	defer closeTestStream(t, stream)
 
 	got := parseCSV(t, readFile(t, path))
 	want := [][]string{csvHeader()}
@@ -125,15 +116,10 @@ func TestStreamCSVWritesRowsBeforeClose(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "results.csv")
 	result := testResult()
 
-	stream, err := NewStream(FormatCSV, path, false)
-	if err != nil {
-		t.Fatalf("NewStream() error = %v", err)
-	}
-	defer stream.Close()
+	stream := newTestStream(t, FormatCSV, path, false)
+	defer closeTestStream(t, stream)
 
-	if err := stream.Write(result); err != nil {
-		t.Fatalf("Stream.Write() error = %v", err)
-	}
+	writeTestResult(t, stream, result)
 
 	got := parseCSV(t, readFile(t, path))
 	want := [][]string{
@@ -146,83 +132,37 @@ func TestStreamCSVWritesRowsBeforeClose(t *testing.T) {
 }
 
 func TestStreamWriteAfterCloseFails(t *testing.T) {
-	stream, err := NewStream(FormatText, "", false)
-	if err != nil {
-		t.Fatalf("NewStream() error = %v", err)
-	}
-	if err := stream.Close(); err != nil {
-		t.Fatalf("Stream.Close() error = %v", err)
-	}
+	stream := newTestStream(t, FormatHuman, "", true)
+	closeTestStream(t, stream)
 
 	if err := stream.Write(testResult()); err == nil {
 		t.Fatal("Stream.Write() after Close() succeeded, want error")
 	}
 }
 
-func TestWriteUsesSelectedFormat(t *testing.T) {
-	tests := []struct {
-		name   string
-		format Format
-		quiet  bool
-		assert func(t *testing.T, data string)
-	}{
-		{
-			name:   "text",
-			format: FormatText,
-			assert: func(t *testing.T, data string) {
-				t.Helper()
-				if want := "[DIR] http://example.test/admin ---> 200 | 123\n"; data != want {
-					t.Fatalf("Write() text = %q, want %q", data, want)
-				}
-			},
-		},
-		{
-			name:   "quiet text",
-			format: FormatText,
-			quiet:  true,
-			assert: func(t *testing.T, data string) {
-				t.Helper()
-				if want := "200 http://example.test/admin 123\n"; data != want {
-					t.Fatalf("Write() quiet text = %q, want %q", data, want)
-				}
-			},
-		},
-		{
-			name:   "json",
-			format: FormatJSON,
-			assert: func(t *testing.T, data string) {
-				t.Helper()
-				var got core.Result
-				if err := json.Unmarshal(bytes.TrimSpace([]byte(data)), &got); err != nil {
-					t.Fatalf("Write() JSON = %q, unmarshal error = %v", data, err)
-				}
-				if want := testResult(); got != want {
-					t.Fatalf("Write() JSON = %+v, want %+v", got, want)
-				}
-			},
-		},
-		{
-			name:   "csv",
-			format: FormatCSV,
-			assert: func(t *testing.T, data string) {
-				t.Helper()
-				got := parseCSV(t, data)
-				want := [][]string{csvHeader(), csvRecord(testResult())}
-				if !equalCSV(got, want) {
-					t.Fatalf("Write() CSV = %#v, want %#v", got, want)
-				}
-			},
-		},
-	}
+func newTestStream(t *testing.T, format Format, path string, noColor bool) *Stream {
+	t.Helper()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "results")
-			if err := Write([]core.Result{testResult()}, tt.format, path, tt.quiet); err != nil {
-				t.Fatalf("Write() error = %v", err)
-			}
-			tt.assert(t, readFile(t, path))
-		})
+	stream, err := NewStream(format, path, noColor)
+	if err != nil {
+		t.Fatalf("NewStream() error = %v", err)
+	}
+	return stream
+}
+
+func writeTestResult(t *testing.T, stream *Stream, result core.Result) {
+	t.Helper()
+
+	if err := stream.Write(result); err != nil {
+		t.Fatalf("Stream.Write() error = %v", err)
+	}
+}
+
+func closeTestStream(t *testing.T, stream *Stream) {
+	t.Helper()
+
+	if err := stream.Close(); err != nil {
+		t.Fatalf("Stream.Close() error = %v", err)
 	}
 }
 

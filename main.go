@@ -33,7 +33,7 @@ import (
 
 	"github.com/MyCode83/godirb/internal/calibration"
 
-	"github.com/MyCode83/godirb/internal/tui"
+	// "github.com/MyCode83/godirb/internal/ui"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
@@ -50,8 +50,8 @@ const banner string = (`
 var version = "dev"
 
 var (
-	wg           sync.WaitGroup
-	mode         core.Mode = core.ModeDir
+	wg   sync.WaitGroup
+	mode core.Mode = core.ModeDir
 )
 
 // others
@@ -148,11 +148,11 @@ func main() {
 		debug.Printf("basic auth enabled user=%q", cfg.Username)
 	}
 
-	outputFormat := output.FromFlags(cfg.JSON, cfg.CSV)
-	streamOutput := cfg.Output != "" || outputFormat != output.FormatText
-	debug.Printf("output format=%d stream_output=%t", outputFormat, streamOutput)
+	outputFormat := output.FromFlags(cfg.JSON, cfg.CSV, cfg.Quiet)
+	quietOutput := cfg.Output != "" || outputFormat != output.FormatHuman
+	debug.Printf("output format=%d quiet_output=%t", outputFormat, quietOutput)
 
-	if !cfg.Quiet && !(streamOutput && cfg.Output == "") {
+	if !cfg.Quiet && !(quietOutput && cfg.Output == "") {
 		fmt.Printf(banner)
 		fmt.Println("\n------------------")
 		fmt.Println("[*] Url: ", cfg.BaseURL)
@@ -296,30 +296,27 @@ func main() {
 		engine.Calibration = cal
 	}
 	var stream *output.Stream
-	if streamOutput {
-		stream, err = output.NewStream(outputFormat, cfg.Output, cfg.Quiet)
-		if err != nil {
-			debug.Error("output stream open", err)
-			fmt.Fprintf(os.Stderr, "[X] Error writing output: %v\n", err)
-			os.Exit(1)
-		}
+
+	stream, err = output.NewStream(outputFormat, cfg.Output, cfg.NoColor)
+	if err != nil {
+		debug.Error("output stream open", err)
+		fmt.Fprintf(os.Stderr, "[X] Error writing output: %v\n", err)
+		os.Exit(1)
 	}
 
 	var outputErr error
 	for result := range engine.Run(cfg.BaseURL) {
 		debug.Printf("result prefix=%s status=%d size=%d url=%s extra=%q", result.Kind, result.Status, result.Size, result.URL, result.Error)
-		if streamOutput {
-			if outputErr != nil {
-				continue
-			}
-			if err := stream.Write(result); err != nil {
-				debug.Error("output stream write", err)
-				outputErr = err
-				cancel()
-			}
+		if outputErr != nil {
 			continue
 		}
-		tui.Print(result, cfg.Quiet)
+		if err := stream.Write(result); err != nil {
+			debug.Error("output stream write", err)
+			outputErr = err
+			cancel()
+		}
+		continue
+
 	}
 	if stream != nil {
 		if err := stream.Close(); outputErr == nil {
