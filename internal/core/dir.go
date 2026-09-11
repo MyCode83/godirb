@@ -127,7 +127,7 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						}
 
 						debug.Printf("extension placeholder detected word=%q url=%q", word, fullURL)
-						c.processExtPlaceholder(request, results, fullURL, "dir-ext", "UNKNOWN",
+						c.processExtPlaceholder(request, results, fullURL, "FILE", "dir-ext",
 							func(ext string) string {
 								return urlutil.AddExtension(urlutil.JoinPath(dir, ExtPlaceholder), ext)
 							},
