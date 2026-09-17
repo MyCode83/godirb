@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
-	"sync"
 	"os"
-
+	buildinfo "runtime/debug"
+	"strings"
+	"sync"
 
 	"github.com/MyCode83/godirb/internal/assemble"
 	"github.com/MyCode83/godirb/internal/cli"
 	"github.com/MyCode83/godirb/internal/core"
 	"github.com/MyCode83/godirb/internal/debug"
+	"github.com/MyCode83/godirb/internal/help"
 )
 
 var version = "dev"
@@ -18,13 +20,33 @@ func reportIssue() {
 	fmt.Fprintf(os.Stderr, "Please report it at https://github.com/MyCode83/godirb/issues")
 }
 
+func currentVersion() string {
+	if version != "dev" {
+		return strings.TrimPrefix(version, "v")
+	}
+
+	info, ok := buildinfo.ReadBuildInfo()
+	if ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return strings.TrimPrefix(info.Main.Version, "v")
+	}
+
+	return strings.TrimPrefix(version, "v")
+}
+
+func init() {
+	if len(os.Args) == 1 {
+		fmt.Println(help.PrintHelp())
+		os.Exit(0)
+	}
+}
+
 func main() {
 	assemble.ConfigureProcess()
 	contextCancel, cancel := assemble.SetupSignals()
 
 	cfg, wd := cli.ParseFlags()
 	if cfg.Version {
-		fmt.Println(version)
+		fmt.Println(currentVersion())
 		return
 	}
 	assemble.LogParsedFlags(cfg, wd)
