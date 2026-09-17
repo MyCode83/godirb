@@ -29,6 +29,11 @@ go install github.com/MyCode83/godirb@latest
 brew install MyCode83/godirb/godirb
 ```
 
+## Winget
+```bash
+winget install MyCode83.godirb
+```
+
 ### Binary
 
 Download the latest release for your platform from the
