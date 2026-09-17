@@ -119,7 +119,6 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 					return
 				}
 
-				debug.Printf("fuzz response status=%d body=%d", response.StatusCode, response.Lenght)
 				status := response.StatusCode
 				lenght := response.Lenght
 
@@ -162,7 +161,6 @@ func (c *Core) RunFuzz(baseURL string) <-chan Result {
 					return
 				}
 				if slices.Contains(c.IgnoreCodes, status) {
-					debug.Printf("fuzz ignored url=%s status=%d", fullURL, status)
 					return
 				}
 				results <- Result{

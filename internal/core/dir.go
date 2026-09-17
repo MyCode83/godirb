@@ -145,7 +145,6 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 						return
 					}
 
-					debug.Printf("dir response status=%d body=%d", response.StatusCode, response.Lenght)
 					status := response.StatusCode
 					lenght := response.Lenght
 
@@ -186,7 +185,6 @@ func (c *Core) RunDir(baseURL string) <-chan Result {
 					}
 
 					if slices.Contains(c.IgnoreCodes, status) {
-						debug.Printf("dir ignored url=%s status=%d", fullURL, status)
 						return
 
 					}
